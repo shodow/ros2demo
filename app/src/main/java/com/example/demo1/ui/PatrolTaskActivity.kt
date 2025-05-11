@@ -1,0 +1,98 @@
+package com.example.demo1.ui
+
+import android.app.TimePickerDialog
+import android.content.Intent
+import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.demo1.R
+import com.example.demo1.databinding.ActivityPatrolTaskBinding
+import com.example.demo1.data.entity.PatrolTask
+import com.example.demo1.ui.adapter.PatrolTaskAdapter
+import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
+import java.util.*
+
+class PatrolTaskActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityPatrolTaskBinding
+    private lateinit var taskViewModel: PatrolTaskViewModel
+    private lateinit var adapter: PatrolTaskAdapter
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = ActivityPatrolTaskBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        taskViewModel = ViewModelProvider(this).get(PatrolTaskViewModel::class.java)
+
+        setupRecyclerView()
+        setupObservers()
+        setupListeners()
+    }
+
+    private fun setupRecyclerView() {
+        adapter = PatrolTaskAdapter(
+            { task ->
+                // 点击任务，打开编辑页面
+                val intent = Intent(this, AddPatrolTaskActivity::class.java)
+                intent.putExtra("task_id", task.id)
+                intent.putExtra("task_isActive", task.isActive)
+                intent.putExtra("task_name", task.name)
+                intent.putExtra("task_hour", task.hour)
+                intent.putExtra("task_minute", task.minute)
+                intent.putExtra("task_second", task.second)
+                intent.putExtra("task_createdTime", task.createdTime)
+                startActivity(intent)
+            },
+            { task, isActive ->
+                // 切换任务状态
+                val updatedTask = task.copy(isActive = isActive)
+                taskViewModel.update(updatedTask)
+            }
+        )
+
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
+        binding.recyclerView.adapter = adapter
+    }
+
+    private fun setupObservers() {
+        taskViewModel.allTasks.observe(this, Observer { tasks ->
+            tasks?.let { adapter.setTasks(it) }
+        })
+    }
+
+    private fun setupListeners() {
+        binding.fabAddTask.setOnClickListener {
+            // 打开添加任务页面
+            val intent = Intent(this, AddPatrolTaskActivity::class.java)
+            startActivity(intent)
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_patrol_task, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_delete_all -> {
+                taskViewModel.deleteAll()
+                Toast.makeText(this, "已删除所有任务", Toast.LENGTH_SHORT).show()
+                true
+            }
+            android.R.id.home -> {
+                onBackPressed()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+}    

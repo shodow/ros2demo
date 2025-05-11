@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    kotlin("kapt") // 应用 KAPT 插件
 }
 
 android {
@@ -59,6 +60,7 @@ dependencies {
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.activity)
     implementation(libs.protolite.well.known.types)
+    implementation(libs.androidx.room.common.jvm)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -66,6 +68,14 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    implementation("androidx.room:room-runtime:2.6.0")
+    implementation("androidx.room:room-ktx:2.6.0")
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation("javax.inject:javax.inject:1")
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    implementation("androidx.hilt:hilt-work:1.0.0")
+    kapt("androidx.hilt:hilt-compiler:1.0.0")
 
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     implementation("com.google.code.gson:gson:2.8.9")
@@ -76,5 +86,8 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("ai.picovoice:porcupine-android:3.0.0")
-    implementation("com.bytedance.speechengine:speechengine_asr_tob:2.3.0")
+//    implementation("com.bytedance.speechengine:speechengine_asr_tob:2.3.0")
+    // ros2
+//    implementation("org.ros2.rcljava:rcljava:0.15.0")
+//    implementation("org.ros2.rcljava:std_msgs:0.15.0")
  }

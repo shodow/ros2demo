@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:key="websocket_server_url"
+        android:title="WebSocket服务器地址"
+        android:defaultValue="ws://192.168.1.100:9090"
+        android:summary="ROS2 WebSocket服务器地址"
+        android:inputType="textUri" />
+
+    <EditTextPreference
+        android:key="ros_master_url"
+        android:title="ROS Master地址"
+        android:defaultValue="http://192.168.1.100:11311"
+        android:summary="ROS Master服务器地址"
+        android:inputType="textUri" />
+
+    <SwitchPreferenceCompat
+        android:key="auto_connect"
+        android:title="自动连接"
+        android:defaultValue="true"
+        android:summary="启动应用时自动连接WebSocket服务器" />
+
+    <SwitchPreferenceCompat
+        android:key="vibrate_on_connect"
+        android:title="连接时震动"
+        android:defaultValue="true"
+        android:summary="WebSocket连接状态变化时震动提示" />
+
+    <ListPreference
+        android:key="log_level"
+        android:title="日志级别"
+        android:defaultValue="info"
+        android:entries="@array/log_level_entries"
+        android:entryValues="@array/log_level_values"
+        android:summary="控制应用日志的详细程度" />
+</PreferenceScreen>    

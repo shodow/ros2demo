@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/et_position_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="点位名称"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/et_x"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="X坐标"
+        android:inputType="numberDecimal"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_y"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Y坐标"
+        android:inputType="numberDecimal"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_z"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Z坐标"
+        android:inputType="numberDecimal"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_yaw"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="朝向角度(Yaw)"
+        android:inputType="numberDecimal"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/et_sequence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="序号"
+        android:inputType="number"
+        android:layout_marginBottom="16dp" />
+
+    <Button
+        android:id="@+id/btn_save_position"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="保存点位" />
+</LinearLayout>

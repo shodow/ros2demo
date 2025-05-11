@@ -1,0 +1,114 @@
+package com.example.demo1.service
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.*
+import com.example.demo1.data.entity.Position
+import com.example.demo1.data.repository.PositionRepository
+import kotlinx.coroutines.*
+import java.util.*
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+
+class PatrolWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val positionRepository: PositionRepository,
+    private val webSocketService: Ros2WebSocketService
+) : CoroutineWorker(context, params) {
+
+    companion object {
+        private const val TAG = "PatrolWorker"
+        const val WORK_NAME = "com.example.demo1.PATROL_WORK"
+        const val EXTRA_TASK_ID = "task_id"
+    }
+
+    override suspend fun doWork(): Result {
+        return withContext(Dispatchers.IO) {
+            try {
+                val taskId = inputData.getInt(EXTRA_TASK_ID, -1)
+                if (taskId == -1) {
+                    return@withContext Result.failure()
+                }
+
+                // 获取所有点位
+                val positions = positionRepository.allPositions as List<Position>
+                if (positions.isEmpty()) {
+                    return@withContext Result.failure()
+                }
+
+                // 按照sequence排序
+                val sortedPositions = positions.sortedBy { it.sequence }
+
+                // 执行巡逻任务
+                executePatrol(sortedPositions)
+
+                Result.success()
+            } catch (e: Exception) {
+                Result.failure()
+            }
+        }
+    }
+
+    private suspend fun executePatrol(positions: List<Position>) {
+        // 发送加载地图指令
+        webSocketService.sendLoadMapCommand()
+        delay(5000) // 等待5秒让地图加载
+
+        // 发送设置起始位置指令
+        if (positions.isNotEmpty()) {
+            val homePosition = positions[0]
+            webSocketService.sendSetInitialPoseCommand(homePosition.x, homePosition.y, homePosition.z, homePosition.yaw)
+            delay(5000) // 等待5秒让机器人定位
+        }
+
+        // 依次移动到各个点位
+        for (position in positions) {
+            webSocketService.sendMoveToPositionCommand(position)
+            delay(15000) // 等待15秒让机器人移动到目标位置
+        }
+
+        // 回到起始位置
+        if (positions.isNotEmpty()) {
+            val homePosition = positions[0]
+            webSocketService.sendMoveToPositionCommand(homePosition)
+            delay(15000) // 等待15秒让机器人回到起始位置
+        }
+    }
+
+//    class Factory @Inject constructor(
+//        private val positionRepository: PositionRepository,
+//        private val webSocketService: Ros2WebSocketService
+//    ) : ChildWorkerFactory {
+//        override fun create(context: Context, params: WorkerParameters): ListenableWorker {
+//            return PatrolWorker(context, params, positionRepository, webSocketService)
+//        }
+//    }
+
+    // 设置巡逻任务
+    fun schedulePatrolTask(hour: Int, minute: Int, second: Int, taskId: Int) {
+        val now = Calendar.getInstance()
+        val targetTime = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, second)
+        }
+
+        // 如果目标时间已经过去，则设置为明天
+        if (targetTime.before(now)) {
+            targetTime.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        val delayMillis = targetTime.timeInMillis - now.timeInMillis
+
+        val workRequest = OneTimeWorkRequestBuilder<PatrolWorker>()
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .setInputData(workDataOf(EXTRA_TASK_ID to taskId))
+            .addTag(WORK_NAME)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueue(workRequest)
+    }
+}    

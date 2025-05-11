@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.ActionBar" />
+
+<!--    <org.ros.android.view.RosImageView-->
+<!--        android:id="@+id/ros_image_view"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="1"-->
+<!--        android:background="#000000" />-->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp">
+
+        <EditText
+            android:id="@+id/et_position_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="点位名称"
+            android:padding="8dp" />
+
+        <Button
+            android:id="@+id/btn_save_position"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="保存点位"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_set_initial_pose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="设置初始位置"
+        android:padding="8dp" />
+
+    <Button
+        android:id="@+id/btn_back"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="返回"
+        android:padding="8dp" />
+</LinearLayout>
