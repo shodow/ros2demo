@@ -2,7 +2,6 @@ package com.example.demo1
 
 import VoiceWakeUpManager2
 import androidx.lifecycle.lifecycleScope // 用于lifecycleScope
-import android.content.Context
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle

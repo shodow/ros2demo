@@ -67,5 +67,35 @@
             android:layout_height="wrap_content"
             android:text="右转" />
 
+        <Button
+            android:id="@+id/btn_set_initial_pose1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="初始化位置" />
+
+        <Button
+            android:id="@+id/btn_send_goalA"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="移动到位置A" />
+
+        <Button
+            android:id="@+id/btn_send_goalB"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="移动到位置B" />
+
+        <Button
+            android:id="@+id/btn_send_goalC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="移动到位置C" />
+
+        <Button
+            android:id="@+id/btn_cancel_goal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="取消移动" />
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
