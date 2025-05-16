@@ -3,9 +3,11 @@ package com.example.demo1
 import VoiceWakeUpManager2
 import androidx.lifecycle.lifecycleScope // 用于lifecycleScope
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresPermission
@@ -14,6 +16,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.demo1.ui.PatrolTaskActivity
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +52,20 @@ class MainActivity : AppCompatActivity() {
                 RECORD_AUDIO_PERMISSION_CODE
             )
         } else {
+            // 初始化语音唤醒功能
 //            initManagers()
+
+            // 跳转ros控制页面
+            findViewById<Button>(R.id.btn_goto_ros2).setOnClickListener {
+                val intent = Intent(this, Ros2Activity::class.java)
+                startActivity(intent)
+            }
+
+            // 跳转任务页面
+            findViewById<Button>(R.id.btn_goto_task).setOnClickListener {
+                val intent = Intent(this, PatrolTaskActivity::class.java)
+                startActivity(intent)
+            }
         }
     }
 
@@ -63,7 +79,8 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "唤醒词检测成功！", Toast.LENGTH_SHORT).show()
                 Log.d(TAG, "唤醒词检测成功")
                 porcupineManager.stopListening()
-                startConversation()
+                // 唤醒成功，开启豆包智能语音对话
+//                startConversation()
             }
         }
 
@@ -74,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         conversationManager = ConversationManager(this)
     }
 
+    // 开始智能语音对话
     private fun startConversation() {
         conversationManager.startListening { userMessage ->
             Log.d(TAG, "你说: $userMessage")

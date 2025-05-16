@@ -15,8 +15,11 @@ import com.example.demo1.databinding.ActivityPatrolTaskBinding
 import com.example.demo1.data.entity.PatrolTask
 import com.example.demo1.ui.adapter.PatrolTaskAdapter
 import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
+//import androidx.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class PatrolTaskActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPatrolTaskBinding
     private lateinit var taskViewModel: PatrolTaskViewModel

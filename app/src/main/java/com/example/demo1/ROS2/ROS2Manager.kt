@@ -182,16 +182,16 @@ class ROS2Manager(
                     val poseWithCovariance = JSONObject().apply {
                         val pose = JSONObject().apply {
                             val position = JSONObject().apply {
-                                put("x", x)
-                                put("y", y)
-                                put("z", z)
+                                put("x", x) // 初始位置x坐标，可根据需要修改
+                                put("y", y) // 初始位置y坐标，可根据需要修改
+                                put("z", z) // 二维导航中z为0
                             }
 
                             val orientation = JSONObject().apply {
                                 put("x", 0.0)
                                 put("y", 0.0)
-                                put("z", orientationZ)
-                                put("w", orientationW)
+                                put("z", orientationZ) // 初始朝向四元数z，可根据需要修改
+                                put("w", orientationW) // 初始朝向四元数w，可根据需要修改
                             }
 
                             put("position", position)
@@ -199,13 +199,15 @@ class ROS2Manager(
                         }
 
                         // 协方差矩阵
+                        // 修正协方差矩阵格式，使用1x36数组
+                        // 确保covariance是一个双精度浮点数数组
                         val covarianceArray = doubleArrayOf(
-                            0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
-                            0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
-                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            0.25, 0.0, 0.0, 0.0, 0.0, 0.0, // 对角元素 (0,0) 为 0.25，表示 x 方向的位置不确定性较大
+                            0.0, 0.25, 0.0, 0.0, 0.0, 0.0, // 对角元素 (1,1) 为 0.25，表示 y 方向的位置不确定性较大
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, // 其余非对角元素为 0，表示各维度之间没有相关性
                             0.0, 0.0, 0.0, 0.0001, 0.0, 0.0,
                             0.0, 0.0, 0.0, 0.0, 0.0001, 0.0,
-                            0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942 // 最后一个对角元素 (5,5) 为 0.06853891945200942，表示朝向 (z 轴旋转) 的不确定性较小
                         )
 
                         val covariance = JSONArray()

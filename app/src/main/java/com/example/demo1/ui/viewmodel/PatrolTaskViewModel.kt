@@ -4,8 +4,13 @@ import androidx.lifecycle.*
 import com.example.demo1.data.entity.PatrolTask
 import com.example.demo1.data.repository.PatrolTaskRepository
 import kotlinx.coroutines.launch
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class PatrolTaskViewModel(private val repository: PatrolTaskRepository) : ViewModel() {
+@HiltViewModel // 使用这个注解替代ViewModelInject
+class PatrolTaskViewModel @Inject constructor(
+    private val repository: PatrolTaskRepository
+) : ViewModel() {
     // 使用Flow方式（推荐）
     val allTasks: LiveData<List<PatrolTask>> = repository.allTasks.asLiveData()
 

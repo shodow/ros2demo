@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     kotlin("kapt") // 应用 KAPT 插件
+    id("dagger.hilt.android.plugin") // 必须添加这一行
 }
 
 android {
@@ -74,8 +75,15 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.8.1")
     implementation("javax.inject:javax.inject:1")
     implementation("androidx.preference:preference-ktx:1.2.1")
+    // 确保包含 AndroidX 运行时
     implementation("androidx.hilt:hilt-work:1.0.0")
+    // Hilt 依赖 - 使用最新稳定版本
     kapt("androidx.hilt:hilt-compiler:1.0.0")
+    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
+    implementation("com.google.dagger:hilt-android:2.48.1")
+    kapt("com.google.dagger:hilt-android-compiler:2.48.1")
+    // 添加 Hilt AndroidX 运行时
+    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
 
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     implementation("com.google.code.gson:gson:2.8.9")

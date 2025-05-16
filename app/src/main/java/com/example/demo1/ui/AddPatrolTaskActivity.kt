@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
-import com.example.demo1.R
 import com.example.demo1.databinding.ActivityAddPatrolTaskBinding
 import com.example.demo1.data.entity.PatrolTask
 import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
