@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -17,12 +18,14 @@ import com.example.demo1.ui.adapter.PatrolTaskAdapter
 import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
+import javax.inject.Inject
+
 //import androidx.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class PatrolTaskActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPatrolTaskBinding
-    private lateinit var taskViewModel: PatrolTaskViewModel
+    private val taskViewModel: PatrolTaskViewModel by viewModels()
     private lateinit var adapter: PatrolTaskAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +36,7 @@ class PatrolTaskActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        taskViewModel = ViewModelProvider(this).get(PatrolTaskViewModel::class.java)
+//        taskViewModel = ViewModelProvider(this).get(PatrolTaskViewModel::class.java)
 
         setupRecyclerView()
         setupObservers()
@@ -45,13 +48,14 @@ class PatrolTaskActivity : AppCompatActivity() {
             { task ->
                 // 点击任务，打开编辑页面
                 val intent = Intent(this, AddPatrolTaskActivity::class.java)
-                intent.putExtra("task_id", task.id)
-                intent.putExtra("task_isActive", task.isActive)
-                intent.putExtra("task_name", task.name)
-                intent.putExtra("task_hour", task.hour)
-                intent.putExtra("task_minute", task.minute)
-                intent.putExtra("task_second", task.second)
-                intent.putExtra("task_createdTime", task.createdTime)
+                intent.putExtra("task", task)
+//                intent.putExtra("task_id", task.id)
+//                intent.putExtra("task_isActive", task.isActive)
+//                intent.putExtra("task_name", task.name)
+//                intent.putExtra("task_hour", task.hour)
+//                intent.putExtra("task_minute", task.minute)
+//                intent.putExtra("task_second", task.second)
+//                intent.putExtra("task_createdTime", task.createdTime)
                 startActivity(intent)
             },
             { task, isActive ->

@@ -3,8 +3,11 @@ package com.example.demo1.data.repository
 import com.example.demo1.data.dao.PatrolTaskDao
 import com.example.demo1.data.entity.PatrolTask
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class PatrolTaskRepository(private val patrolTaskDao: PatrolTaskDao) {
+class PatrolTaskRepository @Inject constructor(
+    private val patrolTaskDao: PatrolTaskDao
+) {
     // 使用Flow进行响应式查询
     val allTasks: Flow<List<PatrolTask>> = patrolTaskDao.getAll()
 

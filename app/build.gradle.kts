@@ -1,10 +1,11 @@
 import java.util.Date
 plugins {
+    kotlin("kapt") // 应用 KAPT 插件
+//    id("com.google.devtools.ksp")
+    id("com.google.dagger.hilt.android")
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    kotlin("kapt") // 应用 KAPT 插件
-    id("dagger.hilt.android.plugin") // 必须添加这一行
 }
 
 android {
@@ -32,11 +33,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "1.8"
     }
     buildFeatures {
         compose = true
@@ -76,14 +77,19 @@ dependencies {
     implementation("javax.inject:javax.inject:1")
     implementation("androidx.preference:preference-ktx:1.2.1")
     // 确保包含 AndroidX 运行时
-    implementation("androidx.hilt:hilt-work:1.0.0")
+//    implementation("androidx.hilt:hilt-work:1.0.0")
     // Hilt 依赖 - 使用最新稳定版本
-    kapt("androidx.hilt:hilt-compiler:1.0.0")
-    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
-    implementation("com.google.dagger:hilt-android:2.48.1")
-    kapt("com.google.dagger:hilt-android-compiler:2.48.1")
+//    kapt("androidx.hilt:hilt-compiler:1.0.0")
+//    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03")
+
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    kapt("com.google.dagger:hilt-android-compiler:2.56.2")
     // 添加 Hilt AndroidX 运行时
-    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
+//    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
+
+    // Room 核心库
+    implementation("androidx.room:room-runtime:2.7.1")
+    kapt("androidx.room:room-compiler:2.7.1") // 必须用 kapt 处理注解
 
     implementation("org.java-websocket:Java-WebSocket:1.5.3")
     implementation("com.google.code.gson:gson:2.8.9")
@@ -99,3 +105,7 @@ dependencies {
 //    implementation("org.ros2.rcljava:rcljava:0.15.0")
 //    implementation("org.ros2.rcljava:std_msgs:0.15.0")
  }
+
+kapt {
+    correctErrorTypes = true
+}

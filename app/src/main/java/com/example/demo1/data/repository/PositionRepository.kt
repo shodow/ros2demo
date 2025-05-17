@@ -3,8 +3,11 @@ package com.example.demo1.data.repository
 import com.example.demo1.data.dao.PositionDao
 import com.example.demo1.data.entity.Position
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class PositionRepository(private val positionDao: PositionDao) {
+class PositionRepository @Inject constructor(
+    private val positionDao: PositionDao
+) {
     // 使用Flow进行响应式查询
     val allPositions: Flow<List<Position>> = positionDao.getAll()
 

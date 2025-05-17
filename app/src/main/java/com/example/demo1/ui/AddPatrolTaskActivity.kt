@@ -3,17 +3,21 @@ package com.example.demo1.ui
 import android.app.TimePickerDialog
 import android.os.Bundle
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.demo1.databinding.ActivityAddPatrolTaskBinding
 import com.example.demo1.data.entity.PatrolTask
 import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 
+@AndroidEntryPoint
 class AddPatrolTaskActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddPatrolTaskBinding
-    private lateinit var taskViewModel: PatrolTaskViewModel
-    private lateinit var editingTask: PatrolTask
+    private val taskViewModel: PatrolTaskViewModel by viewModels()
+//    private lateinit var editingTask: PatrolTask
+    private var editingTask: PatrolTask? = null
     private var selectedHour: Int = 0
     private var selectedMinute: Int = 0
     private var selectedSecond: Int = 0
@@ -23,23 +27,26 @@ class AddPatrolTaskActivity : AppCompatActivity() {
         binding = ActivityAddPatrolTaskBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        taskViewModel = ViewModelProvider(this).get(PatrolTaskViewModel::class.java)
-
+//        taskViewModel = ViewModelProvider(this).get(PatrolTaskViewModel::class.java)
         // 获取传递的任务数据（如果有）
-        editingTask.id = intent.getSerializableExtra("task_id") as Int
-        editingTask.isActive = intent.getSerializableExtra("task_isActive") as Boolean
-        editingTask.name = intent.getSerializableExtra("task_name") as String
-        editingTask.hour = intent.getSerializableExtra("task_hour") as Int
-        editingTask.minute = intent.getSerializableExtra("task_minute") as Int
-        editingTask.second = intent.getSerializableExtra("task_second") as Int
-        editingTask.createdTime = intent.getSerializableExtra("task_createdTime") as Long
+        editingTask = intent.getSerializableExtra("task") as? PatrolTask
+
+//        editingTask = PatrolTask(-1, "", 0,0,0)
+//        // 获取传递的任务数据（如果有）
+//        editingTask.id = intent.getSerializableExtra("task_id") as Int
+//        editingTask.isActive = intent.getSerializableExtra("task_isActive") as Boolean
+//        editingTask.name = intent.getSerializableExtra("task_name") as String
+//        editingTask.hour = intent.getSerializableExtra("task_hour") as Int
+//        editingTask.minute = intent.getSerializableExtra("task_minute") as Int
+//        editingTask.second = intent.getSerializableExtra("task_second") as Int
+//        editingTask.createdTime = intent.getSerializableExtra("task_createdTime") as Long
 
         setupViews()
     }
 
     private fun setupViews() {
         // 设置标题
-        if (editingTask.id != -1) {
+        if (editingTask != null) {
             title = "编辑巡逻任务"
             // 填充现有数据
             binding.etTaskName.setText(editingTask?.name)
@@ -90,7 +97,7 @@ class AddPatrolTaskActivity : AppCompatActivity() {
             return
         }
 
-        if (editingTask.id != -1) {
+        if (editingTask != null) {
             // 更新现有任务
             val updatedTask = editingTask!!.copy(
                 name = name,

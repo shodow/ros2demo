@@ -22,6 +22,6 @@ class RobotControlApplication: Application() {
 
     private fun initGlobalConfig() {
         // 具体初始化逻辑（如初始化日志、网络库等）
-        Log.d(TAG, "");
+        Log.d(TAG, "initGlobalConfig");
     }
 }

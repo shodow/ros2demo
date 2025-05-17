@@ -45,6 +45,11 @@
             android:name=".ui.PatrolTaskActivity"
             android:exported="true">
         </activity>
+
+        <activity
+            android:name=".ui.AddPatrolTaskActivity"
+            android:exported="true">
+        </activity>
     </application>
 
 </manifest>

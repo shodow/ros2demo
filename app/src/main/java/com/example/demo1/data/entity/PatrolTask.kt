@@ -2,6 +2,7 @@ package com.example.demo1.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.io.Serializable
 import java.util.*
 
 @Entity(tableName = "patrol_tasks")
@@ -13,4 +14,4 @@ data class PatrolTask(
     var second: Int,
     var isActive: Boolean = true,
     var createdTime: Long = System.currentTimeMillis()
-)    
+) : Serializable // 添加 Serializable 接口

@@ -3,9 +3,14 @@ package com.example.demo1.ui.viewmodel
 import androidx.lifecycle.*
 import com.example.demo1.data.entity.Position
 import com.example.demo1.data.repository.PositionRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class PositionViewModel(private val repository: PositionRepository) : ViewModel() {
+@HiltViewModel // 使用这个注解替代ViewModelInject
+class PositionViewModel @Inject constructor(
+    private val repository: PositionRepository
+) : ViewModel() {
     // 使用Flow方式（推荐）
     val allPositions: LiveData<List<Position>> = repository.allPositions.asLiveData()
 

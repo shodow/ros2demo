@@ -27,7 +27,7 @@ import kotlinx.coroutines.withContext
  */
 class MainActivity : AppCompatActivity() {
     private var TAG = "MainActivity"
-    private lateinit var wakeUpManager: VoiceWakeUpManager
+//    private lateinit var wakeUpManager: VoiceWakeUpManager
     private lateinit var conversationManager: ConversationManager
     private lateinit var porcupineManager: VoiceWakeUpManager2
     private val porcupineAccessKey = "ciezDYHGF9BpCMKHFK/0EY/R08tqPqdrQ4UH2vLDVlJb0ReBuxYGPg=="
@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        wakeUpManager.release()
+//        wakeUpManager.release()
         conversationManager.release()
     }
 

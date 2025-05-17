@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,10 +17,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class PositionListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPositionListBinding
-    private lateinit var positionViewModel: PositionViewModel
+    private val positionViewModel: PositionViewModel by viewModels()
     private lateinit var adapter: PositionAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +33,7 @@ class PositionListActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        positionViewModel = ViewModelProvider(this).get(PositionViewModel::class.java)
+//        positionViewModel = ViewModelProvider(this).get(PositionViewModel::class.java)
 
         setupRecyclerView()
         setupObservers()

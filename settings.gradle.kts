@@ -1,7 +1,7 @@
 pluginManagement {
     plugins {
         // 声明 Hilt 插件版本
-        id("dagger.hilt.android.plugin") version "2.48.1"
+//        id("dagger.hilt.android.plugin") version "2.48.1"
         // Kotlin 插件（如果未在其他地方声明）
         id("org.jetbrains.kotlin.android") version "1.8.22"
     }
