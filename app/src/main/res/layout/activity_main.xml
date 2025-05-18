@@ -13,6 +13,12 @@
         android:padding="16dp">
 
         <Button
+            android:id="@+id/btn_goto_setting"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="设置页面" />
+
+        <Button
             android:id="@+id/btn_goto_ros2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,6 +29,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="ros任务页面" />
+
+        <Button
+            android:id="@+id/btn_goto_position"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ros点位页面" />
+
+        <Button
+            android:id="@+id/btn_goto_map"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ros地图页面" />
 
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

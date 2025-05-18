@@ -7,7 +7,7 @@ import java.util.*
 
 @Entity(tableName = "patrol_tasks")
 data class PatrolTask(
-    @PrimaryKey(autoGenerate = true) var id: Int = -1,
+    @PrimaryKey(autoGenerate = true) var id: Int = 0,
     var name: String,
     var hour: Int,
     var minute: Int,

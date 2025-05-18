@@ -42,4 +42,8 @@ class PatrolTaskViewModel @Inject constructor(
     suspend fun getById(id: Int): PatrolTask? {
         return repository.getById(id)
     }
+
+    suspend fun getActiveTasks(): LiveData<List<PatrolTask>> {
+        return repository.getActiveTasks()
+    }
 }

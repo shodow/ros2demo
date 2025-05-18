@@ -20,8 +20,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 import javax.inject.Inject
 
-//import androidx.hilt.android.AndroidEntryPoint
-
 @AndroidEntryPoint
 class PatrolTaskActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPatrolTaskBinding
@@ -36,8 +34,6 @@ class PatrolTaskActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-//        taskViewModel = ViewModelProvider(this).get(PatrolTaskViewModel::class.java)
-
         setupRecyclerView()
         setupObservers()
         setupListeners()
@@ -49,13 +45,6 @@ class PatrolTaskActivity : AppCompatActivity() {
                 // 点击任务，打开编辑页面
                 val intent = Intent(this, AddPatrolTaskActivity::class.java)
                 intent.putExtra("task", task)
-//                intent.putExtra("task_id", task.id)
-//                intent.putExtra("task_isActive", task.isActive)
-//                intent.putExtra("task_name", task.name)
-//                intent.putExtra("task_hour", task.hour)
-//                intent.putExtra("task_minute", task.minute)
-//                intent.putExtra("task_second", task.second)
-//                intent.putExtra("task_createdTime", task.createdTime)
                 startActivity(intent)
             },
             { task, isActive ->

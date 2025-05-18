@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 class Ros2WebSocketService : Service() {
+    private val TAG = "Ros2WebSocketService"
     private val binder = LocalBinder()
     private var webSocketClient: WebSocketClient? = null
     private var executorService: ScheduledExecutorService? = null
@@ -36,6 +37,7 @@ class Ros2WebSocketService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "onCreate")
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         executorService = Executors.newSingleThreadScheduledExecutor()
@@ -43,6 +45,7 @@ class Ros2WebSocketService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val serverUrl = intent?.getStringExtra("serverUrl") ?: ""
+        Log.d(TAG, "onStartCommand: $serverUrl")
         if (serverUrl.isNotEmpty() && webSocketClient == null) {
             connectToWebSocket(serverUrl)
         }
@@ -50,16 +53,22 @@ class Ros2WebSocketService : Service() {
     }
 
     override fun onBind(intent: Intent): IBinder {
+        Log.d(TAG, "onBind")
+
         return binder
     }
 
     override fun onDestroy() {
+        Log.d(TAG, "onDestroy")
+
         super.onDestroy()
         disconnect()
         executorService?.shutdown()
     }
 
     private fun createNotificationChannel() {
+        Log.d(TAG, "createNotificationChannel")
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
@@ -72,6 +81,8 @@ class Ros2WebSocketService : Service() {
     }
 
     private fun createNotification(): Notification {
+        Log.d(TAG, "createNotification")
+
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
@@ -88,6 +99,8 @@ class Ros2WebSocketService : Service() {
     }
 
     private fun connectToWebSocket(serverUrl: String) {
+        Log.d(TAG, "connectToWebSocket serverUrl: $serverUrl")
+
         try {
             webSocketClient = object : WebSocketClient(URI(serverUrl)) {
                 override fun onOpen(handshakedata: ServerHandshake?) {
@@ -124,6 +137,8 @@ class Ros2WebSocketService : Service() {
     }
 
     private fun scheduleReconnect() {
+        Log.d(TAG, "scheduleReconnect")
+
         if (reconnectAttempts < maxReconnectAttempts) {
             val delay = reconnectDelayBase * (1 shl reconnectAttempts)
             executorService?.schedule({
@@ -139,12 +154,16 @@ class Ros2WebSocketService : Service() {
     }
 
     fun disconnect() {
+        Log.d(TAG, "disconnect")
+
         webSocketClient?.close()
         webSocketClient = null
         connectionStatus = ConnectionStatus.DISCONNECTED
     }
 
     fun sendMessage(message: String) {
+        Log.d(TAG, "sendMessage: $message")
+
         if (connectionStatus == ConnectionStatus.CONNECTED) {
             webSocketClient?.send(message)
         } else {
@@ -153,12 +172,16 @@ class Ros2WebSocketService : Service() {
     }
 
     fun addListener(listener: WebSocketListener) {
+        Log.d(TAG, "addListener")
+
         if (!listeners.contains(listener)) {
             listeners.add(listener)
         }
     }
 
     fun removeListener(listener: WebSocketListener) {
+        Log.d(TAG, "removeListener")
+
         listeners.remove(listener)
     }
 
@@ -182,6 +205,8 @@ class Ros2WebSocketService : Service() {
 
     // 定义ROS2消息格式
     fun createRos2Message(topic: String, messageType: String, data: Any): String {
+        Log.d(TAG, "createRos2Message, topic: $topic, messageType: $messageType, data: $data")
+
         val jsonObject = JsonObject()
         jsonObject.addProperty("op", "publish")
         jsonObject.addProperty("topic", topic)
@@ -197,6 +222,8 @@ class Ros2WebSocketService : Service() {
 
     // 加载地图指令
     fun sendLoadMapCommand() {
+        Log.d(TAG, "sendLoadMapCommand")
+
         val command = mapOf("command" to "load_map")
         val message = createRos2Message("/robot_command", "std_msgs/String", command)
         sendMessage(message)
@@ -204,6 +231,8 @@ class Ros2WebSocketService : Service() {
 
     // 设置起始位置指令
     fun sendSetInitialPoseCommand(x: Double, y: Double, z: Double, yaw: Double) {
+        Log.d(TAG, "sendSetInitialPoseCommand, X: $x, y: $y, z: $z, yaw: $yaw")
+
         val pose = mapOf(
             "position" to mapOf("x" to x, "y" to y, "z" to z),
             "orientation" to mapOf("x" to 0.0, "y" to 0.0, "z" to Math.sin(yaw/2), "w" to Math.cos(yaw/2))
@@ -215,6 +244,8 @@ class Ros2WebSocketService : Service() {
 
     // 移动到指定点位指令
     fun sendMoveToPositionCommand(position: com.example.demo1.data.entity.Position) {
+        Log.d(TAG, "sendMoveToPositionCommand, X: ${position.x}, y: ${position.y}, z: ${position.z}, yaw: ${position.yaw}")
+
         val pose = mapOf(
             "position" to mapOf("x" to position.x, "y" to position.y, "z" to position.z),
             "orientation" to mapOf("x" to 0.0, "y" to 0.0, "z" to Math.sin(position.yaw/2), "w" to Math.cos(position.yaw/2))
@@ -226,6 +257,8 @@ class Ros2WebSocketService : Service() {
 
     // 回到起始位置指令
     fun sendReturnToHomeCommand() {
+        Log.d(TAG, "sendReturnToHomeCommand")
+
         val command = mapOf("command" to "return_to_home")
         val message = createRos2Message("/robot_command", "std_msgs/String", command)
         sendMessage(message)

@@ -11,7 +11,9 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import androidx.hilt.work.HiltWorker
 
+@HiltWorker
 class PatrolWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
@@ -26,6 +28,7 @@ class PatrolWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        // 所有要执行的任务内容都在这里
         return withContext(Dispatchers.IO) {
             try {
                 val taskId = inputData.getInt(EXTRA_TASK_ID, -1)
@@ -45,8 +48,10 @@ class PatrolWorker @AssistedInject constructor(
                 // 执行巡逻任务
                 executePatrol(sortedPositions)
 
+                // 返回成功，可以带参数
                 Result.success()
             } catch (e: Exception) {
+                // 返回失败，可以带参数
                 Result.failure()
             }
         }
@@ -78,14 +83,22 @@ class PatrolWorker @AssistedInject constructor(
         }
     }
 
-//    class Factory @Inject constructor(
-//        private val positionRepository: PositionRepository,
-//        private val webSocketService: Ros2WebSocketService
-//    ) : ChildWorkerFactory {
+    // DaggerWorkerFactory.ChildWorkerFactory
+    class PatrolWorkerFactory @Inject constructor(
+        private val positionRepository: PositionRepository,
+        private val webSocketService: Ros2WebSocketService
+    ) : WorkerFactory() {
 //        override fun create(context: Context, params: WorkerParameters): ListenableWorker {
 //            return PatrolWorker(context, params, positionRepository, webSocketService)
 //        }
-//    }
+        override fun createWorker(
+            appContext: Context,
+            workerClassName: String,
+            workerParameters: WorkerParameters
+        ): ListenableWorker {
+            return PatrolWorker(appContext, workerParameters, positionRepository, webSocketService)
+        }
+    }
 
     // 设置巡逻任务
     fun schedulePatrolTask(hour: Int, minute: Int, second: Int, taskId: Int) {
@@ -102,13 +115,13 @@ class PatrolWorker @AssistedInject constructor(
         }
 
         val delayMillis = targetTime.timeInMillis - now.timeInMillis
-
+        // 创建workRequest
         val workRequest = OneTimeWorkRequestBuilder<PatrolWorker>()
             .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(EXTRA_TASK_ID to taskId))
             .addTag(WORK_NAME)
             .build()
-
+        // 获取WorkManager单例，把workRequest推到队列里
         WorkManager.getInstance(applicationContext).enqueue(workRequest)
     }
 }    

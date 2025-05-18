@@ -16,7 +16,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.demo1.ui.MapActivity
 import com.example.demo1.ui.PatrolTaskActivity
+import com.example.demo1.ui.PositionListActivity
+import com.example.demo1.ui.SettingsActivity
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +58,12 @@ class MainActivity : AppCompatActivity() {
             // 初始化语音唤醒功能
 //            initManagers()
 
+            // 跳转设置页面
+            findViewById<Button>(R.id.btn_goto_setting).setOnClickListener {
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
+            }
+
             // 跳转ros控制页面
             findViewById<Button>(R.id.btn_goto_ros2).setOnClickListener {
                 val intent = Intent(this, Ros2Activity::class.java)
@@ -64,6 +73,18 @@ class MainActivity : AppCompatActivity() {
             // 跳转任务页面
             findViewById<Button>(R.id.btn_goto_task).setOnClickListener {
                 val intent = Intent(this, PatrolTaskActivity::class.java)
+                startActivity(intent)
+            }
+
+            // 跳转点位页面
+            findViewById<Button>(R.id.btn_goto_position).setOnClickListener {
+                val intent = Intent(this, PositionListActivity::class.java)
+                startActivity(intent)
+            }
+
+            // 跳转地图页面
+            findViewById<Button>(R.id.btn_goto_map).setOnClickListener {
+                val intent = Intent(this, MapActivity::class.java)
                 startActivity(intent)
             }
         }

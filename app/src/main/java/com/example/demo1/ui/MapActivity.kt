@@ -11,12 +11,14 @@ import com.example.demo1.data.entity.Position
 import com.example.demo1.service.Ros2WebSocketService
 import com.example.demo1.ui.viewmodel.PositionViewModel
 import com.example.demo1.ui.viewmodel.WebSocketViewModel
+import dagger.hilt.android.AndroidEntryPoint
 //import org.ros.android.MessageCallable
 //import org.ros.android.view.RosImageView
 //import org.ros.node.NodeConfiguration
 //import org.ros.node.NodeMainExecutor
 import java.net.URI
 
+@AndroidEntryPoint
 class MapActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMapBinding
     private lateinit var positionViewModel: PositionViewModel

@@ -8,10 +8,12 @@ import com.example.demo1.R
 import com.example.demo1.databinding.ActivityAddPositionBinding
 import com.example.demo1.data.entity.Position
 import com.example.demo1.ui.viewmodel.PositionViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class AddPositionActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddPositionBinding
     private lateinit var positionViewModel: PositionViewModel

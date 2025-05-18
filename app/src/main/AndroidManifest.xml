@@ -50,6 +50,44 @@
             android:name=".ui.AddPatrolTaskActivity"
             android:exported="true">
         </activity>
+
+        <activity
+            android:name=".ui.PositionListActivity"
+            android:exported="true">
+        </activity>
+
+        <activity
+            android:name=".ui.AddPositionActivity"
+            android:exported="true">
+        </activity>
+
+        <activity
+            android:name=".ui.MapActivity"
+            android:exported="true">
+        </activity>
+
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="true">
+        </activity>
+
+        <service
+            android:name=".service.Ros2WebSocketService"
+            android:enabled="true"
+            android:exported="false" />
+
+<!--        <service-->
+<!--            android:name=".service.PatrolWorker"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="false"-->
+<!--            tools:ignore="Instantiatable" />-->
+
+        <!-- If you want to disable android.startup completely. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="remove">
+        </provider>
     </application>
 
 </manifest>

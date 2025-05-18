@@ -33,8 +33,6 @@ class PositionListActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-//        positionViewModel = ViewModelProvider(this).get(PositionViewModel::class.java)
-
         setupRecyclerView()
         setupObservers()
         setupListeners()

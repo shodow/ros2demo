@@ -1,5 +1,6 @@
 package com.example.demo1.data.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.*
 import com.example.demo1.data.entity.PatrolTask
 import kotlinx.coroutines.flow.Flow
@@ -28,4 +29,7 @@ interface PatrolTaskDao {
 
     @Query("DELETE FROM patrol_tasks")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM patrol_tasks WHERE isActive = 1")
+    fun getActiveTasks(): LiveData<List<PatrolTask>>
 }    

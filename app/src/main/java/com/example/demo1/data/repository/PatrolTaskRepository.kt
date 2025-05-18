@@ -1,5 +1,6 @@
 package com.example.demo1.data.repository
 
+import androidx.lifecycle.LiveData
 import com.example.demo1.data.dao.PatrolTaskDao
 import com.example.demo1.data.entity.PatrolTask
 import kotlinx.coroutines.flow.Flow
@@ -34,5 +35,9 @@ class PatrolTaskRepository @Inject constructor(
 
     suspend fun getById(id: Int): PatrolTask? {
         return patrolTaskDao.getById(id)
+    }
+
+    suspend fun getActiveTasks(): LiveData<List<PatrolTask>> {
+        return patrolTaskDao.getActiveTasks()
     }
 }
