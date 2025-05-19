@@ -2,8 +2,10 @@ package com.example.demo1.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.example.demo1.R
 import com.example.demo1.databinding.ActivityMapBinding
@@ -20,6 +22,7 @@ import java.net.URI
 
 @AndroidEntryPoint
 class MapActivity : AppCompatActivity() {
+    private var TAG = "MapActivity"
     private lateinit var binding: ActivityMapBinding
     private lateinit var positionViewModel: PositionViewModel
     private lateinit var webSocketViewModel: WebSocketViewModel
@@ -37,6 +40,12 @@ class MapActivity : AppCompatActivity() {
 
         setupViews()
         setupMapView()
+
+        positionViewModel.allPositions.observe(this, Observer { positions ->
+            positions?.let {
+                Log.d(TAG, "it = $it")
+            }
+        })
     }
 
     private fun setupViews() {

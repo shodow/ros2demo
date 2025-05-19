@@ -10,24 +10,40 @@ import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Observer
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.example.demo1.service.PatrolWorker
+import com.example.demo1.service.PatrolWorker.Companion.EXTRA_TASK_ID
+import com.example.demo1.service.PatrolWorker.Companion.WORK_NAME
 import com.example.demo1.ui.MapActivity
 import com.example.demo1.ui.PatrolTaskActivity
 import com.example.demo1.ui.PositionListActivity
 import com.example.demo1.ui.SettingsActivity
+import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
+import com.example.demo1.ui.viewmodel.PositionViewModel
+import com.example.demo1.ui.viewmodel.WebSocketViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 /**
  * 主页
  */
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private var TAG = "MainActivity"
 //    private lateinit var wakeUpManager: VoiceWakeUpManager
@@ -35,6 +51,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var porcupineManager: VoiceWakeUpManager2
     private val porcupineAccessKey = "ciezDYHGF9BpCMKHFK/0EY/R08tqPqdrQ4UH2vLDVlJb0ReBuxYGPg=="
     private val keywordModelAssetPath = "Hello-Robot_en_android_v3_0_0.ppn"
+//    lateinit var patrolWorker: PatrolWorker // 依赖注入
+    private val taskViewModel: PatrolTaskViewModel by viewModels()
+    private val positionViewModel: PositionViewModel by viewModels()
+    private val webSocketViewModel: WebSocketViewModel by viewModels()
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +107,11 @@ class MainActivity : AppCompatActivity() {
             findViewById<Button>(R.id.btn_goto_map).setOnClickListener {
                 val intent = Intent(this, MapActivity::class.java)
                 startActivity(intent)
+            }
+
+            // 开启定时任务
+            findViewById<Button>(R.id.begin_work).setOnClickListener {
+                beginWork()
             }
         }
     }
@@ -158,5 +184,49 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val RECORD_AUDIO_PERMISSION_CODE = 1001
+    }
+
+    private fun beginWork() {
+        // 获取定时巡逻任务
+        taskViewModel.allTasks.observe(this, Observer { tasks ->
+            tasks.forEach { task ->
+                if (task.isActive) {
+                    // 对每个 task 执行操作，如更新 RecyclerView
+                    Log.d(TAG, "处理任务: ${task.name}, hour = ${task.hour}, minute = ${task.minute}, second = ${task.second}, taskId = ${task.id}")
+                    // 触发调度
+                    schedulePatrolTask(
+                        hour = task.hour,
+                        minute = task.minute,
+                        second = task.second,
+                        taskId = task.id
+                    )
+                }
+            }
+        })
+    }
+
+    fun schedulePatrolTask(hour: Int, minute: Int, second: Int, taskId: Int) {
+        val now = Calendar.getInstance()
+        val targetTime = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, second)
+        }
+
+        // 如果目标时间已经过去，则设置为明天
+        if (targetTime.before(now)) {
+            targetTime.add(Calendar.DAY_OF_YEAR, 1)
+        }
+
+        val delayMillis = targetTime.timeInMillis - now.timeInMillis
+        // 创建workRequest
+        val workRequest = OneTimeWorkRequestBuilder<PatrolWorker>()
+//            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS) // 定时任务执行
+            .setInitialDelay(2, TimeUnit.SECONDS) // 2s后执行
+            .setInputData(workDataOf(EXTRA_TASK_ID to taskId))
+            .addTag(WORK_NAME)
+            .build()
+        // 获取WorkManager单例，把workRequest推到队列里
+        WorkManager.getInstance(applicationContext).enqueue(workRequest)
     }
 }

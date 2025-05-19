@@ -3,6 +3,7 @@ package com.example.demo1.ui
 import android.app.TimePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -22,6 +23,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class PatrolTaskActivity : AppCompatActivity() {
+    private var TAG = "PatrolTaskActivity"
     private lateinit var binding: ActivityPatrolTaskBinding
     private val taskViewModel: PatrolTaskViewModel by viewModels()
     private lateinit var adapter: PatrolTaskAdapter
@@ -60,7 +62,11 @@ class PatrolTaskActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         taskViewModel.allTasks.observe(this, Observer { tasks ->
-            tasks?.let { adapter.setTasks(it) }
+            tasks?.let {
+                adapter.setTasks(it)
+                Log.d(TAG, "it = $it")
+            }
+
         })
     }
 

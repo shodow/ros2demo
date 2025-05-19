@@ -10,20 +10,22 @@ import androidx.work.Configuration
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.example.demo1.data.repository.PositionRepository
 import com.example.demo1.service.PatrolWorker
 import com.example.demo1.service.Ros2WebSocketService
+import com.example.demo1.ui.viewmodel.WebSocketViewModel
 import javax.inject.Inject
 
 @HiltAndroidApp
 class RobotControlApplication: Application()
-//    , Configuration.Provider
+    , Configuration.Provider
 {
     private var TAG = "RobotControlApplication"
 
-//    @Inject
-//    lateinit var patrolWorkerFactory : PatrolWorker.PatrolWorkerFactory
-    // 主构造函数（系统自动调用，无需手动实现）
+    @Inject
+    lateinit var patrolWorkerFactory : PatrolWorkerFactory
 
+    // 主构造函数（系统自动调用，无需手动实现）
     // init 块：在构造函数执行时调用（可选）
     init {
         // 轻量级初始化逻辑（如配置全局参数）
@@ -55,9 +57,20 @@ class RobotControlApplication: Application()
 //        val intent = Intent(context, TaskCheckService::class.java)
 //        context.stopService(intent)
     }
-//    override fun getWorkManagerConfiguration() =
-//        Configuration.Builder()
-//            .setMinimumLoggingLevel(Log.DEBUG)
-//            .setWorkerFactory(patrolWorkerFactory)
-//            .build()
+    override fun getWorkManagerConfiguration() =
+        Configuration.Builder()
+            .setMinimumLoggingLevel(Log.DEBUG)
+            .setWorkerFactory(patrolWorkerFactory)
+            .build()
+}
+
+class PatrolWorkerFactory @Inject constructor(
+    private val positionRepository: PositionRepository,
+//    private val webSocketService: WebSocketViewModel
+) : WorkerFactory() {
+    override fun createWorker(
+        appContext: Context,
+        workerClassName: String,
+        workerParameters: WorkerParameters
+    ): ListenableWorker = PatrolWorker(appContext, workerParameters, positionRepository)
 }

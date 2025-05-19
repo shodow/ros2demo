@@ -2,6 +2,7 @@ package com.example.demo1.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -21,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class PositionListActivity : AppCompatActivity() {
+    private var TAG = "PositionListActivity"
     private lateinit var binding: ActivityPositionListBinding
     private val positionViewModel: PositionViewModel by viewModels()
     private lateinit var adapter: PositionAdapter
@@ -52,7 +54,10 @@ class PositionListActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         positionViewModel.allPositions.observe(this, Observer { positions ->
-            positions?.let { adapter.setPositions(it) }
+            positions?.let {
+                adapter.setPositions(it)
+                Log.d(TAG, "it = $it")
+            }
         })
     }
 
