@@ -48,5 +48,17 @@
             android:layout_height="wrap_content"
             android:text="ros开启定时巡航" />
 
+        <Button
+            android:id="@+id/nav2_go_to_pointC"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="导航到C点" />
+
+        <Button
+            android:id="@+id/cancel_nav2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="取消导航" />
+
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

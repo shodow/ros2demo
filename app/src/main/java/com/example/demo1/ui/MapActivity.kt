@@ -25,7 +25,7 @@ class MapActivity : AppCompatActivity() {
     private var TAG = "MapActivity"
     private lateinit var binding: ActivityMapBinding
     private lateinit var positionViewModel: PositionViewModel
-    private lateinit var webSocketViewModel: WebSocketViewModel
+//    private lateinit var webSocketViewModel: WebSocketViewModel
     private var currentX: Double = 0.0
     private var currentY: Double = 0.0
     private var currentYaw: Double = 0.0
@@ -36,7 +36,7 @@ class MapActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         positionViewModel = ViewModelProvider(this).get(PositionViewModel::class.java)
-        webSocketViewModel = ViewModelProvider(this).get(WebSocketViewModel::class.java)
+//        webSocketViewModel = ViewModelProvider(this).get(WebSocketViewModel::class.java)
 
         setupViews()
         setupMapView()
@@ -105,23 +105,25 @@ class MapActivity : AppCompatActivity() {
         val z = 0.0
         val yaw = currentYaw
 
-        // 发送设置初始位置指令
-        webSocketViewModel.sendMessage(
-            Ros2WebSocketService().createRos2Message(
-                "/initialpose",
-                "geometry_msgs/PoseWithCovarianceStamped",
-                mapOf(
-                    "header" to mapOf("frame_id" to "map"),
-                    "pose" to mapOf(
-                        "pose" to mapOf(
-                            "position" to mapOf("x" to x, "y" to y, "z" to z),
-                            "orientation" to mapOf("x" to 0.0, "y" to 0.0, "z" to Math.sin(yaw/2), "w" to Math.cos(yaw/2))
-                        ),
-                        "covariance" to DoubleArray(36) { if (it == 0 || it == 7 || it == 35) 0.001 else 0.0 }
-                    )
-                )
-            )
-        )
+//        // 发送设置初始位置指令
+//        webSocketViewModel.sendMessage(
+//            Ros2WebSocketService().createRos2Message(
+//                "/initialpose",
+//                "geometry_msgs/PoseWithCovarianceStamped",
+//                mapOf(
+//                    "header" to mapOf("frame_id" to "map"),
+//                    "pose" to mapOf(
+//                        "pose" to mapOf(
+//                            "position" to mapOf("x" to x, "y" to y, "z" to z),
+//                            "orientation" to mapOf("x" to 0.0, "y" to 0.0, "z" to Math.sin(yaw/2), "w" to Math.cos(yaw/2))
+//                        ),
+//                        "covariance" to DoubleArray(36) { if (it == 0 || it == 7 || it == 35) 0.001 else 0.0 }
+//                    )
+//                )
+//            )
+//        )
+        Ros2WebSocketService.getInstance()?.sendInitialPose(-0.04101024825363886, 1.168558691943051, 0.0,
+            -0.195191580889, -0.9807651333270637)
 
         Toast.makeText(this, "已设置初始位置", Toast.LENGTH_SHORT).show()
     }

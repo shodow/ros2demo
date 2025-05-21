@@ -24,13 +24,13 @@ import androidx.work.workDataOf
 import com.example.demo1.service.PatrolWorker
 import com.example.demo1.service.PatrolWorker.Companion.EXTRA_TASK_ID
 import com.example.demo1.service.PatrolWorker.Companion.WORK_NAME
+import com.example.demo1.service.Ros2WebSocketService
 import com.example.demo1.ui.MapActivity
 import com.example.demo1.ui.PatrolTaskActivity
 import com.example.demo1.ui.PositionListActivity
 import com.example.demo1.ui.SettingsActivity
 import com.example.demo1.ui.viewmodel.PatrolTaskViewModel
 import com.example.demo1.ui.viewmodel.PositionViewModel
-import com.example.demo1.ui.viewmodel.WebSocketViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 import kotlinx.coroutines.launch
@@ -54,7 +54,6 @@ class MainActivity : AppCompatActivity() {
 //    lateinit var patrolWorker: PatrolWorker // 依赖注入
     private val taskViewModel: PatrolTaskViewModel by viewModels()
     private val positionViewModel: PositionViewModel by viewModels()
-    private val webSocketViewModel: WebSocketViewModel by viewModels()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,6 +112,18 @@ class MainActivity : AppCompatActivity() {
             findViewById<Button>(R.id.begin_work).setOnClickListener {
                 beginWork()
             }
+
+            // 导航到C点
+            findViewById<Button>(R.id.nav2_go_to_pointC).setOnClickListener {
+                Ros2WebSocketService.getInstance()?.sendNavigateToPoseGoal(3.727192178346432, 0.029695112267967026, 0.0)
+            }
+
+            // 取消导航
+            findViewById<Button>(R.id.cancel_nav2).setOnClickListener {
+                Ros2WebSocketService.getInstance()?.cancelGoal()
+            }
+
+            Ros2WebSocketService.getInstance()?.print()
         }
     }
 

@@ -9,9 +9,6 @@ import kotlinx.coroutines.*
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import androidx.hilt.work.HiltWorker
-import androidx.lifecycle.asLiveData
-import com.example.demo1.ui.viewmodel.WebSocketViewModel
-import androidx.lifecycle.Observer
 
 @HiltWorker
 class PatrolWorker @AssistedInject constructor(
@@ -22,7 +19,7 @@ class PatrolWorker @AssistedInject constructor(
 //    private val webSocketViewModel: WebSocketViewModel
 ) : CoroutineWorker(context, params) {
 
-
+    private lateinit var webSocketService: Ros2WebSocketService
     companion object {
         private const val TAG = "PatrolWorker"
         const val WORK_NAME = "com.example.demo1.PATROL_WORK"
@@ -77,11 +74,11 @@ class PatrolWorker @AssistedInject constructor(
 //            delay(5000) // 等待5秒让机器人定位
 //        }
 //
-//        // 依次移动到各个点位
-//        for (position in positions) {
-//            webSocketService.sendMoveToPositionCommand(position)
-//            delay(15000) // 等待15秒让机器人移动到目标位置
-//        }
+        // 依次移动到各个点位
+        for (position in positions) {
+            webSocketService.sendMoveToPositionCommand(position)
+            delay(15000) // 等待15秒让机器人移动到目标位置
+        }
 //
 //        // 回到起始位置
 //        if (positions.isNotEmpty()) {

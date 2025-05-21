@@ -1,8 +1,11 @@
 package com.example.demo1
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Build
+import android.os.IBinder
 import dagger.hilt.android.HiltAndroidApp
 import android.util.Log
 import androidx.preference.PreferenceManager
@@ -13,7 +16,6 @@ import androidx.work.WorkerParameters
 import com.example.demo1.data.repository.PositionRepository
 import com.example.demo1.service.PatrolWorker
 import com.example.demo1.service.Ros2WebSocketService
-import com.example.demo1.ui.viewmodel.WebSocketViewModel
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -25,6 +27,20 @@ class RobotControlApplication: Application()
     @Inject
     lateinit var patrolWorkerFactory : PatrolWorkerFactory
 
+    private var service: Ros2WebSocketService? = null
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+            val binder = service as Ros2WebSocketService.LocalBinder
+            this@RobotControlApplication.service = binder.service
+            // 连接成功后可以立即调用服务方法
+            this@RobotControlApplication.service?.print()
+        }
+
+        override fun onServiceDisconnected(arg0: ComponentName) {
+            service = null
+        }
+    }
     // 主构造函数（系统自动调用，无需手动实现）
     // init 块：在构造函数执行时调用（可选）
     init {
@@ -43,11 +59,11 @@ class RobotControlApplication: Application()
         Log.d(TAG, "initGlobalConfig")
         // 开启服务
         // 启动服务（例如在 Application 类或主 Activity 中）
-//        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
-//        val serverIp = prefs.getString("websocket_server_url", "ws://192.168.1.100:9090")
-//        Log.d(TAG, "serverIp: $serverIp")
-//        val intent = Intent(context, Ros2WebSocketService::class.java)
-//        intent.putExtra("serverUrl", serverIp)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val serverIp = prefs.getString("websocket_server_url", "ws://192.168.1.100:9090")
+        Log.d(TAG, "serverIp: $serverIp")
+        val intent = Intent(context, Ros2WebSocketService::class.java)
+        intent.putExtra("serverUrl", serverIp)
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 //            context.startForegroundService(intent)
 //        } else {
@@ -56,6 +72,11 @@ class RobotControlApplication: Application()
         // 停止服务
 //        val intent = Intent(context, TaskCheckService::class.java)
 //        context.stopService(intent)
+
+        // 启动服务
+        startService(intent)
+        // 绑定服务
+        bindService(intent, connection, BIND_AUTO_CREATE)
     }
     override fun getWorkManagerConfiguration() =
         Configuration.Builder()

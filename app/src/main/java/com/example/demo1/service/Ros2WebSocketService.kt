@@ -5,15 +5,21 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.example.demo1.R
 import com.example.demo1.MainActivity
+import com.example.demo1.ROS2Manager
+import com.example.demo1.ROS2Manager.Companion
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
+import org.json.JSONArray
+import org.json.JSONObject
 import java.net.URI
 import java.net.URISyntaxException
+import java.time.Instant
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -28,11 +34,17 @@ class Ros2WebSocketService : Service() {
     private var reconnectAttempts = 0
     private val maxReconnectAttempts = 5
     private val reconnectDelayBase = 2000L // 2 seconds
-
+    // 单例实例的伴生对象
     companion object {
         private const val TAG = "Ros2WebSocketService"
         private const val NOTIFICATION_CHANNEL_ID = "ros2_websocket_channel"
         private const val NOTIFICATION_ID = 1
+        private var instance: Ros2WebSocketService? = null
+
+        // 获取单例实例的方法
+        fun getInstance(): Ros2WebSocketService? {
+            return instance
+        }
     }
 
     override fun onCreate() {
@@ -41,6 +53,7 @@ class Ros2WebSocketService : Service() {
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
         executorService = Executors.newSingleThreadScheduledExecutor()
+        instance = this
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -113,6 +126,20 @@ class Ros2WebSocketService : Service() {
                 override fun onMessage(message: String?) {
                     Log.d(TAG, "Received message: $message")
                     message?.let { listeners.forEach { listener -> listener.onMessageReceived(it) } }
+                    val json = JSONObject(message)
+                    when (json.optString("topic")) {
+                        "/navigate_to_pose/_action/feedback" -> {
+                            val feedback = json.getJSONObject("msg")
+                            val distance = feedback.getJSONObject("current_pose").getJSONObject("pose").getDouble("distance")
+                            Log.d(TAG, "剩余距离: $distance 米")
+                        }
+                        "/navigate_to_pose/_action/result" -> {
+                            val result = json.getJSONObject("msg")
+                            if (result.getBoolean("success")) {
+                                Log.d(TAG, "导航成功！")
+                            }
+                        }
+                    }
                 }
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
@@ -262,5 +289,124 @@ class Ros2WebSocketService : Service() {
         val command = mapOf("command" to "return_to_home")
         val message = createRos2Message("/robot_command", "std_msgs/String", command)
         sendMessage(message)
+    }
+
+    // 打印方法
+    fun print() {
+        Log.d("SingletonService", "hello service")
+        // 也可以使用 Toast 显示
+         Toast.makeText(this, "hello service", Toast.LENGTH_SHORT).show()
+    }
+
+    fun sendInitialPose(x: Double, y: Double, z: Double, orientationZ: Double, orientationW: Double) {
+
+        val now = Instant.now()
+        val sec = now.epochSecond
+        val nanosec = now.nano
+
+        try {
+            val initialPoseMsg = JSONObject().apply {
+                put("op", "publish")
+                put("topic", "/initialpose")
+                put("type", "geometry_msgs/PoseWithCovarianceStamped")
+
+                val msg = JSONObject().apply {
+                    val header = JSONObject().apply {
+                        val stamp = JSONObject().apply {
+                            put("sec", sec)
+                            put("nanosec", nanosec)
+                        }
+                        put("stamp", stamp)
+                        put("frame_id", "map")
+                    }
+
+                    val poseWithCovariance = JSONObject().apply {
+                        val pose = JSONObject().apply {
+                            val position = JSONObject().apply {
+                                put("x", x) // 初始位置x坐标，可根据需要修改
+                                put("y", y) // 初始位置y坐标，可根据需要修改
+                                put("z", z) // 二维导航中z为0
+                            }
+
+                            val orientation = JSONObject().apply {
+                                put("x", 0.0)
+                                put("y", 0.0)
+                                put("z", orientationZ) // 初始朝向四元数z，可根据需要修改
+                                put("w", orientationW) // 初始朝向四元数w，可根据需要修改
+                            }
+
+                            put("position", position)
+                            put("orientation", orientation)
+                        }
+
+                        // 协方差矩阵
+                        // 修正协方差矩阵格式，使用1x36数组
+                        // 确保covariance是一个双精度浮点数数组
+                        val covarianceArray = doubleArrayOf(
+                            0.25, 0.0, 0.0, 0.0, 0.0, 0.0, // 对角元素 (0,0) 为 0.25，表示 x 方向的位置不确定性较大
+                            0.0, 0.25, 0.0, 0.0, 0.0, 0.0, // 对角元素 (1,1) 为 0.25，表示 y 方向的位置不确定性较大
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, // 其余非对角元素为 0，表示各维度之间没有相关性
+                            0.0, 0.0, 0.0, 0.0001, 0.0, 0.0,
+                            0.0, 0.0, 0.0, 0.0, 0.0001, 0.0,
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942 // 最后一个对角元素 (5,5) 为 0.06853891945200942，表示朝向 (z 轴旋转) 的不确定性较小
+                        )
+
+                        val covariance = JSONArray()
+                        covarianceArray.forEach { covariance.put(it) }
+
+                        put("pose", pose)
+                        put("covariance", covariance)
+                    }
+
+                    put("header", header)
+                    put("pose", poseWithCovariance)
+                }
+
+                put("msg", msg)
+            }
+
+            Log.d(TAG, "Sending initial pose: ${initialPoseMsg.toString(2)}")
+            webSocketClient?.send(initialPoseMsg.toString())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending initial pose: ${e.message}")
+        }
+    }
+
+    // 发送 /navigate_to_pose Action 目标
+    fun sendNavigateToPoseGoal(x: Double, y: Double, theta: Double) {
+        val goalMsg = JSONObject().apply {
+            put("op", "send_action_goal")
+            put("action", "/navigate_to_pose")
+            put("type", "nav2_msgs/action/NavigateToPose")
+            put("args", JSONObject().apply {
+                put("pose", JSONObject().apply {
+                    put("header", JSONObject().apply {
+                        put("frame_id", "map")
+                    })
+                    put("pose", JSONObject().apply {
+                        put("position", JSONObject().apply {
+                            put("x", x)
+                            put("y", y)
+                            put("z", 0.0)
+                        })
+                        put("orientation", JSONObject().apply {
+                            put("z", Math.sin(theta / 2))  // 四元数转换
+                            put("w", Math.cos(theta / 2))
+                        })
+                    })
+                })
+            })
+        }
+        Log.d(TAG, "goalMsg: ${goalMsg.toString()}")
+        webSocketClient?.send(goalMsg.toString())
+    }
+
+    fun cancelGoal() {
+        val cancelMsg = JSONObject().apply {
+            put("op", "cancel_action_goal")
+            put("action", "/navigate_to_pose")
+            put("id", "目标ID")  // 需保存发送目标时返回的 ID
+        }
+        webSocketClient?.send(cancelMsg.toString())
     }
 }    
