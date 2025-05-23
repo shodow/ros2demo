@@ -9,8 +9,7 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.example.demo1.R
 import com.example.demo1.MainActivity
-import com.example.demo1.ROS2Manager
-import com.example.demo1.ROS2Manager.Companion
+import com.example.demo1.data.entity.Position
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import org.java_websocket.client.WebSocketClient
@@ -23,6 +22,8 @@ import java.time.Instant
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.*
 
 class Ros2WebSocketService : Service() {
     private val TAG = "Ros2WebSocketService"
@@ -34,6 +35,11 @@ class Ros2WebSocketService : Service() {
     private var reconnectAttempts = 0
     private val maxReconnectAttempts = 5
     private val reconnectDelayBase = 2000L // 2 seconds
+    private val currentNavUUID = AtomicReference("")
+    private val isBusy = AtomicReference(false)
+    private val lock = Any()
+    private lateinit var currentPosition: PointData
+
     // 单例实例的伴生对象
     companion object {
         private const val TAG = "Ros2WebSocketService"
@@ -47,6 +53,13 @@ class Ros2WebSocketService : Service() {
         }
     }
 
+    data class PointData(
+        var x: Double,
+        var y: Double,
+        var z: Double,
+        var yaw: Double
+    )
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
@@ -54,6 +67,12 @@ class Ros2WebSocketService : Service() {
         startForeground(NOTIFICATION_ID, createNotification())
         executorService = Executors.newSingleThreadScheduledExecutor()
         instance = this
+        currentPosition = PointData(
+            x = 0.0,
+            y = 0.0,
+            z = 0.0,
+            yaw = 0.0,
+        )
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -124,19 +143,83 @@ class Ros2WebSocketService : Service() {
                 }
 
                 override fun onMessage(message: String?) {
-                    Log.d(TAG, "Received message: $message")
+//                    Log.d(TAG, "Received message: $message")
                     message?.let { listeners.forEach { listener -> listener.onMessageReceived(it) } }
                     val json = JSONObject(message)
                     when (json.optString("topic")) {
                         "/navigate_to_pose/_action/feedback" -> {
                             val feedback = json.getJSONObject("msg")
-                            val distance = feedback.getJSONObject("current_pose").getJSONObject("pose").getDouble("distance")
-                            Log.d(TAG, "剩余距离: $distance 米")
+//                            val distance = feedback.getJSONObject("feedback")
+//                                .getDouble("distance_remaining")
+//                            Log.d(TAG, "剩余距离: $distance 米")
                         }
-                        "/navigate_to_pose/_action/result" -> {
+                        "/navigate_to_pose/_action/status" -> {
                             val result = json.getJSONObject("msg")
-                            if (result.getBoolean("success")) {
-                                Log.d(TAG, "导航成功！")
+                            val status_lists = result.getJSONArray("status_list")
+                            for (i in 0 until status_lists.length()) {
+                                val item = status_lists.getJSONObject(i)
+                                val status = item.getInt("status")
+                                val goal_info = item.getJSONObject("goal_info")
+                                val goal_id = goal_info.getJSONObject("goal_id")
+                                val uuid = goal_id.getString("uuid")
+                                when (status) {
+                                    0 -> {
+                                        Log.d(TAG, "$uuid : 未知状态（初始化或未定义）！")
+                                    }
+                                    1 -> {
+                                        Log.d(TAG, "$uuid : 目标已接收，但尚未开始执行！")
+                                    }
+                                    2 -> {
+                                        Log.d(TAG, "$uuid : 正在执行中！")
+                                        currentNavUUID.set(uuid)
+                                        isBusy.set(true)
+                                    }
+                                    3 -> {
+                                        if (uuid == currentNavUUID.get()) {
+                                            Log.d(TAG, "$uuid : 正在取消执行！")
+                                        }
+                                    }
+                                    4 -> {
+                                        if (uuid == currentNavUUID.get()) {
+                                            Log.d(TAG, "$uuid : 导航成功！")
+                                            isBusy.set(false)
+                                            currentNavUUID.set("")
+                                        }
+                                    }
+                                    5 -> {
+                                        if (uuid == currentNavUUID.get()) {
+                                            Log.d(TAG, "$uuid : 执行被用户取消！")
+                                        }
+                                    }
+                                    6 -> {
+                                        if (uuid == currentNavUUID.get()) {
+                                            Log.d(TAG, "$uuid : 导航失败！")
+                                            isBusy.set(false)
+                                            currentNavUUID.set("")
+                                        }
+                                    }
+                                }
+                            }
+//                            val status = result.getJSONObject().getInt("status")
+//                            if (status == 4) {  // 4 表示成功
+//                                Log.d(TAG, "导航成功！")
+//                            }
+                        }
+                        "/robot_pose" -> {
+                            val result = json.getJSONObject("msg")
+                            val pose = result.getJSONObject("pose")
+                            val position = pose.getJSONObject("position")
+                            val orientation = pose.getJSONObject("orientation")
+                            val x = position.getDouble("x")
+                            val y = position.getDouble("y")
+
+                            val z = orientation.getDouble("z")
+                            val w = orientation.getDouble("w")
+                            val yaw = quaternionToYaw(z, w)
+                            synchronized(lock) {
+                                currentPosition.x = x
+                                currentPosition.y = y
+                                currentPosition.yaw = yaw
                             }
                         }
                     }
@@ -298,6 +381,16 @@ class Ros2WebSocketService : Service() {
          Toast.makeText(this, "hello service", Toast.LENGTH_SHORT).show()
     }
 
+    fun getBusy(): Boolean = isBusy.get()
+
+    fun getUUID(): String = currentNavUUID.get()
+
+    fun getPosion(): PointData {
+        synchronized(lock) {
+            return currentPosition
+        }
+    }
+
     fun sendInitialPose(x: Double, y: Double, z: Double, orientationZ: Double, orientationW: Double) {
 
         val now = Instant.now()
@@ -372,33 +465,131 @@ class Ros2WebSocketService : Service() {
         }
     }
 
-    // 发送 /navigate_to_pose Action 目标
-    fun sendNavigateToPoseGoal(x: Double, y: Double, theta: Double) {
-        val goalMsg = JSONObject().apply {
-            put("op", "send_action_goal")
-            put("action", "/navigate_to_pose")
-            put("type", "nav2_msgs/action/NavigateToPose")
-            put("args", JSONObject().apply {
-                put("pose", JSONObject().apply {
-                    put("header", JSONObject().apply {
+    fun sendGoalPose(x: Double, y: Double, z: Double, orientationZ: Double, orientationW: Double) {
+        Log.d(TAG, "移动到位置：$x, $y")
+        val now = Instant.now()
+        val sec = now.epochSecond
+        val nanosec = now.nano
+
+        try {
+            val goalPoseMsg = JSONObject().apply {
+                put("op", "publish")
+                put("topic", "/goal_pose")
+
+                val msg = JSONObject().apply {
+                    val header = JSONObject().apply {
+                        val stamp = JSONObject().apply {
+                            put("sec", sec)
+                            put("nanosec", nanosec)
+                        }
+                        put("stamp", stamp)
                         put("frame_id", "map")
-                    })
-                    put("pose", JSONObject().apply {
-                        put("position", JSONObject().apply {
+                    }
+
+                    val pose = JSONObject().apply {
+                        val position = JSONObject().apply {
                             put("x", x)
                             put("y", y)
-                            put("z", 0.0)
+                            put("z", z)
+                        }
+
+                        val orientation = JSONObject().apply {
+                            put("x", 0.0)
+                            put("y", 0.0)
+                            put("z", orientationZ)
+                            put("w", orientationW)
+                        }
+
+                        put("position", position)
+                        put("orientation", orientation)
+                    }
+
+                    put("header", header)
+                    put("pose", pose)
+                }
+
+                put("msg", msg)
+            }
+
+//            Log.d(TAG, "Sending goal_pose: ${goalPoseMsg.toString(2)}")
+            webSocketClient?.send(goalPoseMsg.toString())
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending goal pose: ${e.message}")
+        }
+    }
+
+    // 发送 /navigate_to_pose Action 目标
+    fun sendNavigateToPoseGoal(x: Double, y: Double, theta: Double) {
+        val now = Instant.now()
+        val sec = now.epochSecond
+        val nanosec = now.nano
+        // 构造 Action Goal 消息
+        val goalMsg = JSONObject().apply {
+            put("op", "publish")
+            put("topic", "/navigate_to_pose/_action/send_goal")
+            put("msg", JSONObject().apply {
+                put("goal", JSONObject().apply {
+                    put("pose", JSONObject().apply {
+                        put("header", JSONObject().apply {
+                            put("stamp", JSONObject().apply {
+                                put("sec", sec)
+                                put("nanosec", nanosec)
+                            })
+                            put("frame_id", "map")
                         })
-                        put("orientation", JSONObject().apply {
-                            put("z", Math.sin(theta / 2))  // 四元数转换
-                            put("w", Math.cos(theta / 2))
+                        put("pose", JSONObject().apply {
+                            put("position", JSONObject().apply {
+                                put("x", x)
+                                put("y", y)
+                                put("z", 0.0)
+                            })
+                            put("orientation", JSONObject().apply {
+                                put("x", 0.0)
+                                put("y", 0.0)
+                                put("z", Math.sin(theta / 2))
+                                put("w", Math.cos(theta / 2))
+                            })
                         })
+                    })
+                    put("behavior_tree", "")
+                })
+                put("uuid", JSONObject().apply {
+                    // 生成唯一 ID（示例）
+                    put("data", JSONArray().apply {
+                        put(1)
+                        put(2)
+                        put(3)
+                        put(4)
                     })
                 })
             })
         }
-        Log.d(TAG, "goalMsg: ${goalMsg.toString()}")
         webSocketClient?.send(goalMsg.toString())
+    }
+
+    // 初始化时订阅反馈和结果
+    fun subscribeToActionTopics() {
+        Log.d(TAG, "subscribeToActionTopics")
+//        val subscribeFeedback = JSONObject().apply {
+//            put("op", "subscribe")
+//            put("topic", "/navigate_to_pose/_action/feedback")
+//            put("type", "nav2_msgs/action/NavigateToPose_FeedbackMessage")
+//        }
+//        webSocketClient?.send(subscribeFeedback.toString())
+
+        val subscribeResult = JSONObject().apply {
+            put("op", "subscribe")
+            put("topic", "/navigate_to_pose/_action/status")
+            put("type", "action_msgs/msg/GoalStatusArray")
+        }
+        webSocketClient?.send(subscribeResult.toString())
+
+        val subscribeRobotPose = JSONObject().apply {
+            put("op", "subscribe")
+            put("topic", "/robot_pose")
+            put("type", "geometry_msgs/msg/PoseStamped")
+        }
+        webSocketClient?.send(subscribeRobotPose.toString())
     }
 
     fun cancelGoal() {
@@ -408,5 +599,21 @@ class Ros2WebSocketService : Service() {
             put("id", "目标ID")  // 需保存发送目标时返回的 ID
         }
         webSocketClient?.send(cancelMsg.toString())
+    }
+
+    /**
+     * 将四元数的 z 和 w 分量转换为 Yaw 角（弧度）
+     * @param z 四元数的 z 分量
+     * @param w 四元数的 w 分量
+     * @return Yaw 角（弧度，范围 [-π, π]）
+     */
+    fun quaternionToYaw(z: Double, w: Double): Double {
+        // 确保四元数归一化
+        val norm = sqrt(z * z + w * w)
+        val normalizedZ = z / norm
+        val normalizedW = w / norm
+
+        // 计算 Yaw
+        return 2.0 * atan2(normalizedZ, normalizedW)
     }
 }    

@@ -92,6 +92,8 @@ class MapActivity : AppCompatActivity() {
             y = currentY,
             z = 0.0,
             yaw = currentYaw,
+            yaw_z = Math.sin(currentYaw/2),
+            yaw_w = Math.cos(currentYaw/2),
             sequence = 1)
 
         positionViewModel.insert(position)

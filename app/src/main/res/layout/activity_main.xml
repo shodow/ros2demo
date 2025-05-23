@@ -43,6 +43,12 @@
             android:text="ros地图页面" />
 
         <Button
+            android:id="@+id/begin_subscribe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ros订阅Topic" />
+
+        <Button
             android:id="@+id/begin_work"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,6 +59,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="导航到C点" />
+
+        <Button
+            android:id="@+id/nav2_go_to_home"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="回到起始点" />
 
         <Button
             android:id="@+id/cancel_nav2"

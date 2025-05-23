@@ -3,10 +3,12 @@ package com.example.demo1.ui
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.text.set
 import androidx.lifecycle.ViewModelProvider
 import com.example.demo1.R
 import com.example.demo1.databinding.ActivityAddPositionBinding
 import com.example.demo1.data.entity.Position
+import com.example.demo1.service.Ros2WebSocketService
 import com.example.demo1.ui.viewmodel.PositionViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -57,6 +59,8 @@ class AddPositionActivity : AppCompatActivity() {
 
         // 设置保存按钮点击事件
         binding.btnSavePosition.setOnClickListener { savePosition() }
+
+        binding.btnGetPosition.setOnClickListener { getPosition() }
     }
 
     private fun savePosition() {
@@ -80,6 +84,8 @@ class AddPositionActivity : AppCompatActivity() {
                 y = y,
                 z = z,
                 yaw = yaw,
+                yaw_z = Math.sin(yaw/2),
+                yaw_w = Math.cos(yaw/2),
                 sequence = sequence
             )
             positionViewModel.update(updatedPosition)
@@ -91,6 +97,8 @@ class AddPositionActivity : AppCompatActivity() {
                 y = y,
                 z = z,
                 yaw = yaw,
+                yaw_z = Math.sin(yaw/2),
+                yaw_w = Math.cos(yaw/2),
                 sequence = sequence
             )
             positionViewModel.insert(newPosition)
@@ -98,5 +106,15 @@ class AddPositionActivity : AppCompatActivity() {
 
         Toast.makeText(this, "点位已保存", Toast.LENGTH_SHORT).show()
         finish()
+    }
+
+    private fun getPosition() {
+        val point = Ros2WebSocketService.getInstance()?.getPosion()
+        if (point != null) {
+            binding.etX.setText(point.x.toString())
+            binding.etY.setText(point.y.toString())
+            binding.etZ.setText(point.z.toString())
+            binding.etYaw.setText(point.yaw.toString())
+        }
     }
 }    

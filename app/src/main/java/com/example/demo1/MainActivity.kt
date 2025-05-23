@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -75,6 +76,7 @@ class MainActivity : AppCompatActivity() {
                 RECORD_AUDIO_PERMISSION_CODE
             )
         } else {
+
             // 初始化语音唤醒功能
 //            initManagers()
 
@@ -115,12 +117,31 @@ class MainActivity : AppCompatActivity() {
 
             // 导航到C点
             findViewById<Button>(R.id.nav2_go_to_pointC).setOnClickListener {
-                Ros2WebSocketService.getInstance()?.sendNavigateToPoseGoal(3.727192178346432, 0.029695112267967026, 0.0)
+//                Ros2WebSocketService.getInstance()?.sendNavigateToPoseGoal(3.727192178346432, 0.029695112267967026, 0.0)
+                Ros2WebSocketService.getInstance()?.sendGoalPose(3.727192178346432, 0.029695112267967026, 0.0,
+                    0.06306920804240382, -0.9980091557680741)
             }
 
             // 取消导航
             findViewById<Button>(R.id.cancel_nav2).setOnClickListener {
-                Ros2WebSocketService.getInstance()?.cancelGoal()
+//                Ros2WebSocketService.getInstance()?.cancelGoal()
+                WorkManager.getInstance(applicationContext).cancelAllWork()
+            }
+
+            // 开启话题订阅
+            findViewById<Button>(R.id.begin_subscribe).setOnClickListener {
+                Ros2WebSocketService.getInstance()?.subscribeToActionTopics()
+            }
+
+            // 回到原点
+            findViewById<Button>(R.id.nav2_go_to_home).setOnClickListener {
+                positionViewModel.allPositions.observe(this, Observer { positions ->
+                    val minSequencePosition = positions.minByOrNull { it.sequence }
+                    if (minSequencePosition != null) {
+                        Ros2WebSocketService.getInstance()?.sendGoalPose(minSequencePosition.x, minSequencePosition.y, minSequencePosition.z,
+                            minSequencePosition.yaw_z, minSequencePosition.yaw_w)
+                    }
+                })
             }
 
             Ros2WebSocketService.getInstance()?.print()
@@ -237,6 +258,7 @@ class MainActivity : AppCompatActivity() {
             .setInputData(workDataOf(EXTRA_TASK_ID to taskId))
             .addTag(WORK_NAME)
             .build()
+        WorkManager.getInstance(applicationContext).cancelAllWork()
         // 获取WorkManager单例，把workRequest推到队列里
         WorkManager.getInstance(applicationContext).enqueue(workRequest)
     }

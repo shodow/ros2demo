@@ -12,6 +12,8 @@ data class Position(
     val y: Double,
     val z: Double,
     val yaw: Double,
+    val yaw_z: Double,
+    val yaw_w: Double,
     val sequence: Int,
     val createdTime: Long = System.currentTimeMillis()
 ) : Serializable    

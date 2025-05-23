@@ -9,6 +9,7 @@ import kotlinx.coroutines.*
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import androidx.hilt.work.HiltWorker
+import kotlin.math.*
 
 @HiltWorker
 class PatrolWorker @AssistedInject constructor(
@@ -19,7 +20,7 @@ class PatrolWorker @AssistedInject constructor(
 //    private val webSocketViewModel: WebSocketViewModel
 ) : CoroutineWorker(context, params) {
 
-    private lateinit var webSocketService: Ros2WebSocketService
+//    private lateinit var webSocketService: Ros2WebSocketService
     companion object {
         private const val TAG = "PatrolWorker"
         const val WORK_NAME = "com.example.demo1.PATROL_WORK"
@@ -60,32 +61,49 @@ class PatrolWorker @AssistedInject constructor(
     }
 
     private suspend fun executePatrol(positions: List<Position>) {
-            positions.forEach { task ->
-                Log.d(TAG, "executePatrol: Position is $task")
-            }
+        positions.forEach { task ->
+            Log.d(TAG, "executePatrol: Position is $task")
+        }
         // 发送加载地图指令
 //        webSocketService.sendLoadMapCommand()
 //        delay(5000) // 等待5秒让地图加载
 //
-//        // 发送设置起始位置指令
+        // 发送设置起始位置指令
 //        if (positions.isNotEmpty()) {
 //            val homePosition = positions[0]
-//            webSocketService.sendSetInitialPoseCommand(homePosition.x, homePosition.y, homePosition.z, homePosition.yaw)
+//            val halfYaw = homePosition.yaw * 0.5
+//            val z = sin(halfYaw)
+//            val w = cos(halfYaw)
+//            Ros2WebSocketService.getInstance()?.sendInitialPose(homePosition.x, homePosition.y, 0.0,
+//                z, w)
 //            delay(5000) // 等待5秒让机器人定位
 //        }
-//
+
         // 依次移动到各个点位
         for (position in positions) {
-            webSocketService.sendMoveToPositionCommand(position)
-            delay(15000) // 等待15秒让机器人移动到目标位置
+            val halfYaw = position.yaw * 0.5
+            val z = sin(halfYaw)
+            val w = cos(halfYaw)
+            while (Ros2WebSocketService.getInstance()?.getBusy() == true) {
+                Log.d(TAG, "当前正忙，等待当前任务完成")
+                delay(1000) // 等待1秒
+            }
+            Ros2WebSocketService.getInstance()?.sendGoalPose(position.x, position.y, 0.0,
+                z, w)
+            delay(15000) // 等待1秒
+            Ros2WebSocketService.getInstance()?.getUUID()
         }
-//
-//        // 回到起始位置
-//        if (positions.isNotEmpty()) {
-//            val homePosition = positions[0]
-//            webSocketService.sendMoveToPositionCommand(homePosition)
-//            delay(15000) // 等待15秒让机器人回到起始位置
-//        }
+
+        // 回到起始位置
+        if (positions.isNotEmpty()) {
+            val homePosition = positions[0]
+            val halfYaw = homePosition.yaw * 0.5
+            val z = sin(halfYaw)
+            val w = cos(halfYaw)
+            Ros2WebSocketService.getInstance()?.sendGoalPose(homePosition.x, homePosition.y, 0.0,
+                z, w)
+            delay(15000) // 等待15秒让机器人回到起始位置
+        }
     }
 
 //    // DaggerWorkerFactory.ChildWorkerFactory
