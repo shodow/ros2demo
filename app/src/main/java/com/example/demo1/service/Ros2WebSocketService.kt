@@ -466,6 +466,10 @@ class Ros2WebSocketService : Service() {
     }
 
     fun sendGoalPose(x: Double, y: Double, z: Double, orientationZ: Double, orientationW: Double) {
+        if (isBusy.get()) {
+            Log.e(TAG, "当前任务未完成，等待完成")
+            return
+        }
         Log.d(TAG, "移动到位置：$x, $y")
         val now = Instant.now()
         val sec = now.epochSecond

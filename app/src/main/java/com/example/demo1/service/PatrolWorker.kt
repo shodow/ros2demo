@@ -100,10 +100,20 @@ class PatrolWorker @AssistedInject constructor(
             val halfYaw = homePosition.yaw * 0.5
             val z = sin(halfYaw)
             val w = cos(halfYaw)
+            while (Ros2WebSocketService.getInstance()?.getBusy() == true) {
+                Log.d(TAG, "当前正忙，等待当前任务完成")
+                delay(1000) // 等待1秒
+            }
             Ros2WebSocketService.getInstance()?.sendGoalPose(homePosition.x, homePosition.y, 0.0,
                 z, w)
             delay(15000) // 等待15秒让机器人回到起始位置
         }
+
+        while (Ros2WebSocketService.getInstance()?.getBusy() == true) {
+            Log.d(TAG, "当前正忙，等待当前任务完成")
+            delay(1000) // 等待1秒
+        }
+        Log.d(TAG, "巡航任务执行完毕~~~")
     }
 
 //    // DaggerWorkerFactory.ChildWorkerFactory
