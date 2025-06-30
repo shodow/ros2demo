@@ -1,6 +1,10 @@
 package com.example.demo1.ui
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -19,6 +23,11 @@ import dagger.hilt.android.AndroidEntryPoint
 //import org.ros.node.NodeConfiguration
 //import org.ros.node.NodeMainExecutor
 import java.net.URI
+import android.view.MotionEvent
+import android.view.ScaleGestureDetector
+import android.widget.ImageView
+import kotlin.math.max
+import kotlin.math.min
 
 @AndroidEntryPoint
 class MapActivity : AppCompatActivity() {
@@ -29,6 +38,29 @@ class MapActivity : AppCompatActivity() {
     private var currentX: Double = 0.0
     private var currentY: Double = 0.0
     private var currentYaw: Double = 0.0
+
+    private lateinit var mapImageView: ImageView
+
+    // 地图数据结构
+    private var mapResolution: Float = 0f
+    private var mapWidth: Int = 0
+    private var mapHeight: Int = 0
+    private var mapOriginX: Double = 0.0
+    private var mapOriginY: Double = 0.0
+    private var mapData: ByteArray = byteArrayOf()
+
+    // 位图相关
+    private var mapBitmap: Bitmap? = null
+    private var scaleFactor = 1.0f
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
+    private var posX = 0f
+    private var posY = 0f
+    private lateinit var scaleDetector: ScaleGestureDetector
+
+    // 原点标记位置
+    private var originXPixel = 0f
+    private var originYPixel = 0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,6 +78,48 @@ class MapActivity : AppCompatActivity() {
                 Log.d(TAG, "it = $it")
             }
         })
+
+        mapImageView = findViewById(R.id.mapImageView)
+
+        // 初始化手势检测器
+        scaleDetector = ScaleGestureDetector(this, ScaleListener())
+
+        // 设置触摸监听器实现平移和缩放
+        mapImageView.setOnTouchListener { _, event ->
+            scaleDetector.onTouchEvent(event)
+
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!scaleDetector.isInProgress) {
+                        val dx = event.x - lastTouchX
+                        val dy = event.y - lastTouchY
+
+                        // 限制平移范围，防止移出视图
+                        val newPosX = posX + dx
+                        val newPosY = posY + dy
+
+                        // 计算边界
+                        val scaledWidth = (mapWidth * scaleFactor)
+                        val scaledHeight = (mapHeight * scaleFactor)
+                        val maxX = max(0f, (scaledWidth - mapImageView.width) / 2)
+                        val maxY = max(0f, (scaledHeight - mapImageView.height) / 2)
+
+                        posX = newPosX.coerceIn(-maxX, maxX)
+                        posY = newPosY.coerceIn(-maxY, maxY)
+
+                        updateMapDisplay()
+
+                        lastTouchX = event.x
+                        lastTouchY = event.y
+                    }
+                }
+            }
+            true
+        }
     }
 
     private fun setupViews() {
@@ -129,4 +203,99 @@ class MapActivity : AppCompatActivity() {
 
         Toast.makeText(this, "已设置初始位置", Toast.LENGTH_SHORT).show()
     }
-}    
+
+    private fun updateMapInfo() {
+//        resolutionText.text = "Resolution: ${mapResolution} m/pixel"
+//        dimensionsText.text = "Dimensions: ${mapWidth} x ${mapHeight} pixels"
+//        originText.text = "Origin: (${"%.2f".format(mapOriginX)}, ${"%.2f".format(mapOriginY)})"
+    }
+
+    private fun createMapBitmap() {
+        if (mapWidth == 0 || mapHeight == 0) return
+
+        // 创建位图
+        mapBitmap = Bitmap.createBitmap(mapWidth, mapHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(mapBitmap!!)
+
+        // 设置背景为透明
+        canvas.drawColor(Color.TRANSPARENT)
+
+        // 创建画笔
+        val paint = Paint().apply {
+            isAntiAlias = false
+        }
+
+        // 绘制地图
+        for (y in 0 until mapHeight) {
+            for (x in 0 until mapWidth) {
+                val index = y * mapWidth + x
+                if (index < mapData.size) {
+                    val value = mapData[index].toInt() and 0xFF // 转换为无符号值
+
+                    // 设置颜色
+                    when {
+                        value == -1 -> paint.color = Color.argb(200, 128, 128, 128) // 未知区域（半透明灰）
+                        value > 65 -> paint.color = Color.argb(220, 0, 0, 0)       // 占用区域（黑色）
+                        else -> paint.color = Color.argb(180, 255, 255, 255)        // 空闲区域（半透明白）
+                    }
+
+                    // 绘制像素
+                    canvas.drawPoint(x.toFloat(), (mapHeight - 1 - y).toFloat(), paint)
+                }
+            }
+        }
+
+        // 标记原点（红色）
+        paint.color = Color.RED
+        paint.strokeWidth = 4f
+        canvas.drawCircle(originXPixel, mapHeight - 1 - originYPixel, 5f, paint)
+    }
+
+    private fun updateMapDisplay() {
+        if (mapBitmap == null) return
+
+        // 创建新的位图用于显示
+        val displayBitmap = Bitmap.createBitmap(
+            mapImageView.width,
+            mapImageView.height,
+            Bitmap.Config.ARGB_8888
+        )
+
+        val canvas = Canvas(displayBitmap)
+        canvas.drawColor(Color.LTGRAY) // 背景色
+
+        // 计算缩放和平移后的位置
+        val matrix = android.graphics.Matrix().apply {
+            postScale(scaleFactor, scaleFactor)
+            postTranslate(
+                mapImageView.width / 2 + posX,
+                mapImageView.height / 2 + posY
+            )
+        }
+
+        // 绘制地图
+        canvas.drawBitmap(mapBitmap!!, matrix, Paint())
+
+        // 设置到ImageView
+        mapImageView.setImageBitmap(displayBitmap)
+    }
+
+    private fun resetMapView() {
+        scaleFactor = 1.0f
+        posX = 0f
+        posY = 0f
+        updateMapDisplay()
+    }
+
+    private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            scaleFactor *= detector.scaleFactor
+
+            // 限制缩放范围
+            scaleFactor = max(0.1f, min(scaleFactor, 5.0f))
+
+            updateMapDisplay()
+            return true
+        }
+    }
+}

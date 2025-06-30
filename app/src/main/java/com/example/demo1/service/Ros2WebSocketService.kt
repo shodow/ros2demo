@@ -222,6 +222,33 @@ class Ros2WebSocketService : Service() {
                                 currentPosition.yaw = yaw
                             }
                         }
+                        "/map" -> {
+                            val msg = json.getJSONObject("msg")
+                            val info = msg.getJSONObject("info")
+
+//                            // 解析地图信息
+//                            mapResolution = info["resolution"].asFloat
+//                            mapWidth = info["width"].asInt
+//                            mapHeight = info["height"].asInt
+//
+//                            val origin = info.getAsJsonObject("origin").getAsJsonObject("position")
+//                            mapOriginX = origin["x"].asDouble
+//                            mapOriginY = origin["y"].asDouble
+//
+//                            // 解析地图数据
+//                            mapData = Gson().fromJson(msg["data"], ByteArray::class.java)
+//
+//                            // 计算原点像素位置
+//                            originXPixel = (mapOriginX / mapResolution).toFloat()
+//                            originYPixel = (mapOriginY / mapResolution).toFloat()
+//
+//                            // 更新MapActivity UI
+//                            runOnUiThread {
+////                                updateMapInfo()
+////                                createMapBitmap()
+////                                resetMapView()
+//                            }
+                        }
                     }
                 }
 
