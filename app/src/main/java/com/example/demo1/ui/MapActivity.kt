@@ -22,15 +22,18 @@ import dagger.hilt.android.AndroidEntryPoint
 //import org.ros.android.view.RosImageView
 //import org.ros.node.NodeConfiguration
 //import org.ros.node.NodeMainExecutor
-import java.net.URI
+import org.json.JSONObject
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.widget.ImageView
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.cos
+import kotlin.math.sin
+import android.graphics.PorterDuff
 
 @AndroidEntryPoint
-class MapActivity : AppCompatActivity() {
+class MapActivity : AppCompatActivity(), Ros2WebSocketService.MapDataListener {
     private var TAG = "MapActivity"
     private lateinit var binding: ActivityMapBinding
     private lateinit var positionViewModel: PositionViewModel
@@ -40,9 +43,10 @@ class MapActivity : AppCompatActivity() {
     private var currentYaw: Double = 0.0
 
     private lateinit var mapImageView: ImageView
+    private lateinit var scanImageView: ImageView
 
     // 地图数据结构
-    private var mapResolution: Float = 0f
+    private var mapResolution: Double = 0.0
     private var mapWidth: Int = 0
     private var mapHeight: Int = 0
     private var mapOriginX: Double = 0.0
@@ -79,7 +83,10 @@ class MapActivity : AppCompatActivity() {
             }
         })
 
+        Ros2WebSocketService.getInstance()?.setMapDataListener(this@MapActivity)
+
         mapImageView = findViewById(R.id.mapImageView)
+        scanImageView = findViewById(R.id.scanImageView)
 
         // 初始化手势检测器
         scaleDetector = ScaleGestureDetector(this, ScaleListener())
@@ -120,6 +127,8 @@ class MapActivity : AppCompatActivity() {
             }
             true
         }
+
+        Ros2WebSocketService.getInstance()?.subscribeMapTopic()
     }
 
     private fun setupViews() {
@@ -231,7 +240,9 @@ class MapActivity : AppCompatActivity() {
                 val index = y * mapWidth + x
                 if (index < mapData.size) {
                     val value = mapData[index].toInt() and 0xFF // 转换为无符号值
-
+                    if (value > 0) {
+                        Log.d(TAG, "value = ${value}");
+                    }
                     // 设置颜色
                     when {
                         value == -1 -> paint.color = Color.argb(200, 128, 128, 128) // 未知区域（半透明灰）
@@ -287,6 +298,133 @@ class MapActivity : AppCompatActivity() {
         updateMapDisplay()
     }
 
+    // 处理/scan数据并显示在ImageView上
+    // TODO 需要获取初始化点位，以确定激光雷达显示的位置
+    fun displayLaserScan(scanData: String) {
+        try {
+            // 解析JSON格式的激光雷达数据
+            val json = JSONObject(scanData)
+            val msg = json.getJSONObject("msg")
+            val ranges = msg.getJSONArray("ranges")
+            val angleMin = msg.getDouble("angle_min")
+            val angleMax = msg.getDouble("angle_max")
+            val angleIncrement = msg.getDouble("angle_increment")
+
+            // 创建绘图对象,激光位图尺寸需与地图显示尺寸一致
+            val bitmap = Bitmap.createBitmap(scanImageView.width,
+                scanImageView.height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+
+            // 设置激光点的样式
+            val paint = Paint().apply {
+                color = Color.RED
+                strokeWidth = 2f
+                isAntiAlias = true
+            }
+
+            // 确保地图参数已初始化
+            if (mapResolution == 0.0 || mapWidth == 0 || mapHeight == 0) return
+
+            // 1. 比例转换：1米 = 1/分辨率 像素（因为分辨率是“米/像素”）
+            val meterToPixel = 1 / mapResolution  // 例：分辨率0.05米/像素 → 1米=20像素
+
+            // 2. 机器人在地图中的位置（米）
+            val robotMapX = currentX  // 机器人X（地图坐标系，米）
+            val robotMapY = currentY  // 机器人Y（地图坐标系，米）
+
+            // 3. 绘制机器人位置（激光图上标记）
+            paint.color = Color.RED
+            val robotPixelX = (robotMapX - mapOriginX) * meterToPixel  // 机器人X转换为地图像素
+            val robotPixelY = (mapOriginY - robotMapY) * meterToPixel  // 机器人Y转换为地图像素（y轴翻转，与地图一致）
+            // 应用地图的缩放和平移变换（与地图显示同步）
+            val transformedRobotX = applyMapTransform(robotPixelX, robotPixelY).first
+            val transformedRobotY = applyMapTransform(robotPixelX, robotPixelY).second
+            canvas.drawCircle(transformedRobotX, transformedRobotY, 6f, paint)  // 红色机器人中心
+
+            // 4. 绘制激光点
+            paint.color = Color.GREEN
+            for (i in 0 until ranges.length()) {
+                val range = ranges.getDouble(i)
+                if (range.isNaN() || range > 10.0) continue  // 过滤无效点
+
+                // 激光点相对机器人的角度（弧度）
+                val angle = angleMin + i * angleIncrement
+
+                // 5. 计算激光点在地图中的绝对坐标（米）
+                val pointMapX = robotMapX + range * cos(angle)  // X：机器人X + 水平距离
+                val pointMapY = robotMapY + range * sin(angle)  // Y：机器人Y + 垂直距离
+
+                // 6. 转换为地图像素坐标（与地图绘制逻辑一致）
+                val pointPixelX = (pointMapX - mapOriginX) * meterToPixel
+                val pointPixelY = (mapOriginY - pointMapY) * meterToPixel  // y轴翻转（地图绘制时用了mapHeight-1-y）
+
+                // 7. 应用与地图相同的缩放和平移变换（关键：确保显示位置同步）
+                val (transformedX, transformedY) = applyMapTransform(pointPixelX, pointPixelY)
+
+                // 绘制在激光图上（限制在视图范围内）
+                if (transformedX in 0f..scanImageView.width.toFloat() && transformedY in 0f..scanImageView.height.toFloat()) {
+                    canvas.drawPoint(transformedX, transformedY, paint)
+                }
+            }
+
+            // 更新激光视图
+            scanImageView.post {
+                scanImageView.setImageBitmap(bitmap)
+            }
+
+//            // 坐标系中心（图像中心）
+//            val centerX = scanImageView.width / 2f
+//            val centerY = scanImageView.height / 2f
+//
+//            // 绘制坐标系原点
+//            paint.color = Color.RED
+//            canvas.drawCircle(centerX, centerY, 5f, paint)
+//            paint.color = Color.GREEN
+//
+//            // 绘制所有激光点
+//            for (i in 0 until ranges.length()) {
+//                val range = ranges.getDouble(i)
+//
+//                // 忽略无效距离
+//                if (range.isNaN() || range > 10.0) continue
+//
+//                // 计算点的角度
+//                val angle = angleMin + i * angleIncrement
+//
+//                // 计算点在图像上的坐标（将米转换为像素）
+//                val scale = 50f  // 比例因子：1米 = 50像素
+//                val x = centerX + (range * cos(angle) * scale).toFloat()
+//                val y = centerY + (range * sin(angle) * scale).toFloat()
+//
+//                // 绘制激光点
+//                canvas.drawPoint(x, y, paint)
+//            }
+//
+//            // 在UI线程上更新ImageView
+//            scanImageView.post {
+//                scanImageView.setImageBitmap(bitmap)
+//            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    // 辅助函数：应用与地图相同的缩放和平移变换
+    private fun applyMapTransform(pixelX: Double, pixelY: Double): Pair<Float, Float> {
+        // 地图绘制时的变换逻辑：缩放后平移到中心
+        val scaledX = pixelX.toFloat() * scaleFactor
+        val scaledY = pixelY.toFloat() * scaleFactor
+
+        // 地图中心偏移：mapImageView中心 + 平移量 - 地图自身中心的缩放偏移
+        val offsetX = (mapImageView.width / 2f + posX) - (mapWidth / 2f * scaleFactor)
+        val offsetY = (mapImageView.height / 2f + posY) - (mapHeight / 2f * scaleFactor)
+
+        // 最终显示坐标
+        return Pair(scaledX + offsetX, scaledY + offsetY)
+    }
+
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             scaleFactor *= detector.scaleFactor
@@ -297,5 +435,40 @@ class MapActivity : AppCompatActivity() {
             updateMapDisplay()
             return true
         }
+    }
+
+    override fun onMapDataReceived(rosMapData: Ros2WebSocketService.MapData) {
+        runOnUiThread {
+            // 更新地图信息
+//            resolutionText.text = "Resolution: ${mapData.resolution} m/pixel"
+//            dimensionsText.text = "Dimensions: ${mapData.width} x ${mapData.height} pixels"
+//            originText.text = "Origin: (${"%.2f".format(mapData.originX)}, ${"%.2f".format(mapData.originY)})"
+
+            // 保存地图关键参数（米/像素、原点坐标）
+            mapResolution = rosMapData.resolution  // 分辨率：1像素 = resolution米
+            mapOriginX = rosMapData.originX        // 地图原点X（米，地图坐标系）
+            mapOriginY = rosMapData.originY        // 地图原点Y（米，地图坐标系）
+
+            // 计算原点像素位置
+            originXPixel = (rosMapData.originX / rosMapData.resolution).toFloat()
+            originYPixel = (rosMapData.originY / rosMapData.resolution).toFloat()
+
+            mapWidth = rosMapData.width.toInt()
+            mapHeight = rosMapData.height.toInt()
+            mapData = rosMapData.data
+
+            // 创建地图位图
+            updateMapInfo()
+            createMapBitmap()
+            resetMapView()
+        }
+    }
+
+    override fun onScanDataReceived(scanData: String) {
+        displayLaserScan(scanData)
+    }
+
+    override fun onConnectionStatusChanged(isConnected: Boolean, message: String) {
+        TODO("Not yet implemented")
     }
 }

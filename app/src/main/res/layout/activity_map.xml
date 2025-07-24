@@ -25,13 +25,22 @@
         android:layout_weight="1"
         android:background="#E0E0E0"
         android:padding="4dp">
-
+        <!-- 底层显示地图 -->
         <ImageView
             android:id="@+id/mapImageView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="matrix"
             android:contentDescription="ROS Map Display"/>
+
+        <!-- 上层透明显示激光扫描 -->
+        <ImageView
+            android:id="@+id/scanImageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:scaleType="matrix"
+            android:alpha="1.0"/>
     </FrameLayout>
 
     <LinearLayout

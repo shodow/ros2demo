@@ -39,6 +39,28 @@ class Ros2WebSocketService : Service() {
     private val isBusy = AtomicReference(false)
     private val lock = Any()
     private lateinit var currentPosition: PointData
+    private var listener: MapDataListener? = null
+
+    // 地图数据结构
+    data class MapData(
+        val resolution: Double,
+        val width: Double,
+        val height: Double,
+        val originX: Double,
+        val originY: Double,
+        val data: ByteArray
+    )
+
+    fun setMapDataListener(listener: MapDataListener) {
+        this.listener = listener
+    }
+
+    // 回调接口
+    interface MapDataListener {
+        fun onMapDataReceived(mapData: MapData)
+        fun onScanDataReceived(scanData: String)
+        fun onConnectionStatusChanged(isConnected: Boolean, message: String)
+    }
 
     // 单例实例的伴生对象
     companion object {
@@ -223,31 +245,33 @@ class Ros2WebSocketService : Service() {
                             }
                         }
                         "/map" -> {
+                            Log.d(TAG, "Received /map message: $message")
                             val msg = json.getJSONObject("msg")
                             val info = msg.getJSONObject("info")
 
-//                            // 解析地图信息
-//                            mapResolution = info["resolution"].asFloat
-//                            mapWidth = info["width"].asInt
-//                            mapHeight = info["height"].asInt
-//
-//                            val origin = info.getAsJsonObject("origin").getAsJsonObject("position")
-//                            mapOriginX = origin["x"].asDouble
-//                            mapOriginY = origin["y"].asDouble
-//
-//                            // 解析地图数据
-//                            mapData = Gson().fromJson(msg["data"], ByteArray::class.java)
-//
-//                            // 计算原点像素位置
-//                            originXPixel = (mapOriginX / mapResolution).toFloat()
-//                            originYPixel = (mapOriginY / mapResolution).toFloat()
-//
-//                            // 更新MapActivity UI
-//                            runOnUiThread {
-////                                updateMapInfo()
-////                                createMapBitmap()
-////                                resetMapView()
-//                            }
+                            // 解析地图信息
+                            val resolution = info.getDouble("resolution")
+                            val width = info.getDouble("width")
+                            val height = info.getDouble("height")
+
+                            val origin = info.getJSONObject("origin").getJSONObject("position")
+                            val originX = origin.getDouble("x")
+                            val originY = origin.getDouble("y")
+
+                            // 解析地图数据
+                            val data = Gson().fromJson(msg.getString("data"), ByteArray::class.java)
+
+                            // 创建地图数据对象
+                            val mapData = MapData(resolution, width, height, originX, originY, data)
+
+                            // 通知监听器
+                            listener?.onMapDataReceived(mapData)
+                        }
+                        "/scan" -> {
+                            Log.d(TAG, "Received /scan message: $message")
+                            if (message != null) {
+                                listener?.onScanDataReceived(message)
+                            }
                         }
                     }
                 }
@@ -621,6 +645,22 @@ class Ros2WebSocketService : Service() {
             put("type", "geometry_msgs/msg/PoseStamped")
         }
         webSocketClient?.send(subscribeRobotPose.toString())
+    }
+
+    fun subscribeMapTopic() {
+        val subscribeRobotMap = JSONObject().apply {
+            put("op", "subscribe")
+            put("topic", "/map")
+            put("type", "nav_msgs/msg/OccupancyGrid")
+        }
+        webSocketClient?.send(subscribeRobotMap.toString())
+
+        val subscribeRobotScan = JSONObject().apply {
+            put("op", "subscribe")
+            put("topic", "/scan")
+            put("type", "sensor_msgs/msg/LaserScan")
+        }
+        webSocketClient?.send(subscribeRobotScan.toString())
     }
 
     fun cancelGoal() {
